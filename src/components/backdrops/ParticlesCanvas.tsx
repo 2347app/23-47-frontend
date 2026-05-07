@@ -9,7 +9,17 @@ interface P {
   vy: number;
   r: number;
   a: number;
-  hueShift: number;
+  targetA: number;
+  depth: number;
+  phase: number;
+  phaseSpeed: number;
+  born: number;
+}
+
+function hexToRgb(hex: string): [number, number, number] {
+  const m = hex.replace("#", "").padStart(6, "0").match(/.{2}/g);
+  if (!m) return [255, 255, 255];
+  return [parseInt(m[0], 16), parseInt(m[1], 16), parseInt(m[2], 16)];
 }
 
 export function ParticlesCanvas({
@@ -28,10 +38,13 @@ export function ParticlesCanvas({
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
+
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     let w = window.innerWidth;
     let h = window.innerHeight;
     let parts: P[] = [];
+    let tick_n = 0;
+    const [cr, cg, cb] = hexToRgb(color);
 
     function setup() {
       if (!canvas || !ctx) return;
@@ -43,58 +56,107 @@ export function ParticlesCanvas({
       canvas.style.height = `${h}px`;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.scale(dpr, dpr);
-      parts = Array.from({ length: density }, spawn);
+      parts = Array.from({ length: density }, () => spawn(true));
     }
 
-    function spawn(): P {
+    function spawn(initial = false): P {
+      const depth = Math.random();
+      const depthScale = 0.4 + depth * 0.6;
+
       const base: P = {
         x: Math.random() * w,
-        y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.2,
-        r: Math.random() * 1.6 + 0.6,
-        a: Math.random() * 0.7 + 0.2,
-        hueShift: 0,
+        y: initial ? Math.random() * h : -8,
+        vx: 0,
+        vy: 0,
+        r: 0,
+        a: 0,
+        targetA: 0,
+        depth,
+        phase: Math.random() * Math.PI * 2,
+        phaseSpeed: 0.006 + Math.random() * 0.012,
+        born: tick_n,
       };
-      if (mode === "snow") {
-        base.vy = 0.3 + Math.random() * 0.6;
-        base.vx = (Math.random() - 0.5) * 0.4;
-        base.r = Math.random() * 1.4 + 0.5;
+
+      if (mode === "fireflies") {
+        base.y = initial ? Math.random() * h : Math.random() * h;
+        base.x = initial ? Math.random() * w : Math.random() * w;
+        base.vx = (Math.random() - 0.5) * 0.18 * depthScale;
+        base.vy = (Math.random() - 0.5) * 0.12 * depthScale;
+        base.r = (0.8 + Math.random() * 1.8) * depthScale;
+        base.targetA = (0.3 + Math.random() * 0.55) * depthScale;
+      } else if (mode === "snow") {
+        base.y = initial ? Math.random() * h : -8;
+        base.vy = (0.25 + Math.random() * 0.5) * depthScale;
+        base.vx = (Math.random() - 0.5) * 0.3;
+        base.r = (0.6 + Math.random() * 1.2) * depthScale;
+        base.targetA = (0.25 + Math.random() * 0.5) * depthScale;
       } else if (mode === "embers") {
-        base.vy = -0.4 - Math.random() * 0.6;
-        base.vx = (Math.random() - 0.5) * 0.4;
-        base.r = Math.random() * 1.2 + 0.4;
+        base.y = initial ? Math.random() * h : h + 8;
+        base.vy = -(0.35 + Math.random() * 0.65) * depthScale;
+        base.vx = (Math.random() - 0.5) * 0.3;
+        base.r = (0.5 + Math.random() * 1.1) * depthScale;
+        base.targetA = (0.35 + Math.random() * 0.5) * depthScale;
       } else if (mode === "leaves") {
-        base.vy = 0.2 + Math.random() * 0.4;
-        base.vx = -0.4 - Math.random() * 0.4;
-        base.r = Math.random() * 2.2 + 1.2;
+        base.y = initial ? Math.random() * h : -8;
+        base.vy = (0.18 + Math.random() * 0.35) * depthScale;
+        base.vx = (-0.35 - Math.random() * 0.35) * depthScale;
+        base.r = (1.4 + Math.random() * 2.0) * depthScale;
+        base.targetA = (0.2 + Math.random() * 0.45) * depthScale;
       }
+
+      base.a = 0;
       return base;
     }
-    setup();
 
-    const [r, g, b] = hexToRgb(color);
+    setup();
     let raf = 0;
+
     function tick() {
       if (!ctx) return;
+      tick_n++;
       ctx.clearRect(0, 0, w, h);
+
       for (const p of parts) {
-        p.x += p.vx;
-        p.y += p.vy;
+        p.phase += p.phaseSpeed;
+
+        const sineX = Math.sin(p.phase) * 0.22 * (0.5 + p.depth * 0.5);
+        const sineY = Math.cos(p.phase * 0.7) * 0.12 * (0.5 + p.depth * 0.5);
+
         if (mode === "fireflies") {
-          p.a += (Math.random() - 0.5) * 0.04;
-          if (p.a > 0.9) p.a = 0.9;
-          if (p.a < 0.15) p.a = 0.15;
+          p.x += p.vx + sineX;
+          p.y += p.vy + sineY;
+
+          const pulsedA = p.targetA * (0.6 + 0.4 * Math.sin(p.phase * 1.4));
+          p.a += (pulsedA - p.a) * 0.04;
+        } else {
+          p.x += p.vx + sineX;
+          p.y += p.vy;
+          p.a += (p.targetA - p.a) * 0.05;
         }
-        if (p.x < -10 || p.x > w + 10 || p.y < -10 || p.y > h + 10) {
-          Object.assign(p, spawn(), { y: mode === "snow" || mode === "leaves" ? -5 : Math.random() * h });
-        }
-        ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.a})`;
-        ctx.shadowColor = `rgba(${r}, ${g}, ${b}, 0.6)`;
-        ctx.shadowBlur = mode === "fireflies" || mode === "embers" ? 8 : 2;
+
+        const age = tick_n - p.born;
+        const fadeIn = Math.min(1, age / 80);
+        const displayA = p.a * fadeIn;
+
+        const glowSize = mode === "fireflies" || mode === "embers"
+          ? 8 + 4 * Math.sin(p.phase)
+          : 3;
+
+        ctx.shadowColor = `rgba(${cr},${cg},${cb},${0.5 * p.depth})`;
+        ctx.shadowBlur = glowSize * p.depth;
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${displayA})`;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         ctx.fill();
+
+        const oob =
+          p.x < -20 || p.x > w + 20 ||
+          p.y < -20 || p.y > h + 20;
+
+        if (oob) {
+          const fresh = spawn(false);
+          Object.assign(p, fresh);
+        }
       }
       raf = requestAnimationFrame(tick);
     }
@@ -108,10 +170,4 @@ export function ParticlesCanvas({
   }, [mode, color, density]);
 
   return <canvas ref={ref} className="pointer-events-none fixed inset-0 z-0" aria-hidden />;
-}
-
-function hexToRgb(hex: string): [number, number, number] {
-  const m = hex.replace("#", "").match(/.{2}/g);
-  if (!m) return [255, 255, 255];
-  return [parseInt(m[0], 16), parseInt(m[1], 16), parseInt(m[2], 16)];
 }
