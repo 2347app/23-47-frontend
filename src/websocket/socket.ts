@@ -13,11 +13,14 @@ export function getSocket(token: string | null): Socket | null {
     return socket;
   }
   socket = io(WS_URL, {
-    transports: ["websocket"],
+    transports: ["websocket", "polling"],
     auth: { token },
     autoConnect: true,
     reconnection: true,
-    reconnectionDelay: 800,
+    reconnectionDelay: 1_000,
+    reconnectionDelayMax: 10_000,
+    reconnectionAttempts: 15,
+    timeout: 20_000,
   });
   return socket;
 }
