@@ -41,9 +41,10 @@ class AmbientEngine {
       try {
         const Ctor = (window as any).AudioContext ?? (window as any).webkitAudioContext;
         if (!Ctor) return null;
-        this.ctx = new Ctor();
-        this.masterGain = this.ctx.createGain();
-        this.masterGain.connect(this.ctx.destination);
+        const ctx = new Ctor() as AudioContext;
+        this.ctx = ctx;
+        this.masterGain = ctx.createGain();
+        this.masterGain.connect(ctx.destination);
       } catch {
         return null;
       }

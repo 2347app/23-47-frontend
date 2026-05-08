@@ -47,6 +47,7 @@ export function useSocket(): Socket | null {
     };
     const onChatNew = (msg: Message) => {
       const peerId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+      if (!peerId) return;
       chat.appendMessage(peerId, msg);
       if (msg.senderId !== userId) {
         SFX.message();
