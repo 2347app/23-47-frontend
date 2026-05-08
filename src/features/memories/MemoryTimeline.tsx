@@ -7,22 +7,26 @@ import { fadeUp, stagger } from "../../animations/variants";
 
 interface Memory {
   id: string;
-  eraId: string;
+  era: string;
   mood?: string | null;
-  aiSuggestion?: string | null;
+  metadata?: Record<string, unknown> | null;
   createdAt: string;
 }
 
-const ERA_LABELS: Record<string, { label: string; emoji: string }> = {
-  "madrugada-2003":  { label: "Madrugada 2003",  emoji: "🌙" },
-  "verano-2006":     { label: "Verano 2006",      emoji: "☀️" },
-  "otono-2001":      { label: "Otoño 2001",       emoji: "🍂" },
-  "navidad-2004":    { label: "Navidad 2004",      emoji: "❄️" },
-  "tarde-2007":      { label: "Tarde 2007",        emoji: "🌇" },
-  "lluvia-2002":     { label: "Lluvia 2002",       emoji: "🌧️" },
-  "noche-2009":      { label: "Noche 2009",        emoji: "🌃" },
-  "amanecer-2005":   { label: "Amanecer 2005",     emoji: "🌅" },
-};
+const KEYWORD_EMOJI: [string, string][] = [
+  ["lluvia", "🌧️"], ["rain", "🌧️"],
+  ["verano", "☀️"], ["summer", "☀️"],
+  ["madrugada", "🌙"], ["noche", "🌙"], ["midnight", "🌙"],
+  ["messenger", "💬"], ["otoño", "🍂"], ["navidad", "❄️"],
+  ["tarde", "🌇"], ["amanecer", "🌅"],
+];
+
+function eraDisplay(era: string): { label: string; emoji: string } {
+  const label = era.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const lower = era.toLowerCase();
+  const found = KEYWORD_EMOJI.find(([k]) => lower.includes(k));
+  return { label, emoji: found ? found[1] : "✨" };
+}
 
 function formatRelative(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -68,7 +72,8 @@ export function MemoryTimeline({ limit = 8 }: { limit?: number }) {
     <motion.div variants={stagger(0.06)} initial="hidden" animate="visible" className="space-y-2">
       <AnimatePresence>
         {memories.map((m) => {
-          const meta = ERA_LABELS[m.eraId] ?? { label: m.eraId.replace(/-/g, " "), emoji: "✨" };
+          const meta = eraDisplay(m.era);
+          const aiSuggestion = m.metadata?.aiSuggestion as string | undefined;
           return (
             <motion.div key={m.id} variants={fadeUp}>
               <GlassCard className="flex items-start gap-3 p-3.5">
@@ -85,10 +90,10 @@ export function MemoryTimeline({ limit = 8 }: { limit?: number }) {
                       <span className="chip text-[10px]">{m.mood}</span>
                     )}
                   </div>
-                  {m.aiSuggestion && (
+                  {aiSuggestion && (
                     <p className="mt-0.5 flex items-start gap-1 text-xs text-white/45 italic">
                       <Sparkles size={10} className="mt-0.5 shrink-0" />
-                      {m.aiSuggestion}
+                      {aiSuggestion}
                     </p>
                   )}
                   <div className="mt-1 flex items-center gap-1 text-[10px] text-white/30">
