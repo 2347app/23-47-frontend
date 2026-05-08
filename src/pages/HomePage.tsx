@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Sparkles, Clock4, MessageSquare, Sofa, ArrowRight } from "lucide-react";
+import { Sparkles, Clock4, MessageSquare, Sofa, ArrowRight, Radio } from "lucide-react";
 import { GlassCard } from "../components/GlassCard";
 import { MusicWidget } from "../features/music/MusicWidget";
 import { EraSelector } from "../features/era/EraSelector";
+import { ActivityFeed } from "../features/presence/ActivityFeed";
+import { MemoryTimeline } from "../features/memories/MemoryTimeline";
 import { useAuthStore } from "../store/auth.store";
 import { useEraStore } from "../store/era.store";
 import { useNightMode } from "../hooks/useNightMode";
+import { useRoomsStore } from "../store/rooms.store";
 import { api } from "../services/api";
 import { fadeUp, stagger } from "../animations/variants";
 
@@ -22,6 +25,7 @@ export function HomePage() {
   const user = useAuthStore((s) => s.user);
   const era = useEraStore((s) => s.currentEra);
   const isNight = useNightMode();
+  const totalOnline = useRoomsStore((s) => s.totalOnline());
   const [nostalgia, setNostalgia] = useState<NostalgiaResp | null>(null);
   const [loadingNos, setLoadingNos] = useState(false);
 
@@ -72,11 +76,22 @@ export function HomePage() {
               <Link to="/app/messenger" className="btn-primary text-xs">
                 <MessageSquare size={14} /> Abrir Messenger
               </Link>
+              <Link to="/app/rooms" className="btn-ghost text-xs">
+                <Radio size={14} /> Salas
+                {totalOnline > 0 && (
+                  <span
+                    className="ml-1 rounded-full px-1.5 py-0.5 text-[9px] font-bold"
+                    style={{ background: "rgba(255,255,255,0.15)" }}
+                  >
+                    {totalOnline}
+                  </span>
+                )}
+              </Link>
               <Link to="/app/eras" className="btn-ghost text-xs">
-                <Clock4 size={14} /> Cambiar momento
+                <Clock4 size={14} /> Épocas
               </Link>
               <Link to="/app/room" className="btn-ghost text-xs">
-                <Sofa size={14} /> Mi habitación
+                <Sofa size={14} /> Habitación
               </Link>
             </div>
           </div>
@@ -121,16 +136,32 @@ export function HomePage() {
           </GlassCard>
         </motion.div>
 
-        {/* Spotify */}
+        {/* Spotify + Presence */}
         <motion.div variants={fadeUp} className="space-y-4">
           <div className="text-xs uppercase tracking-[0.28em] text-white/50">Música</div>
           <MusicWidget />
-          <GlassCard className="p-4 text-xs leading-relaxed text-white/55">
-            Lo que escuchas aparecerá en tu estado y en el chat de tus amigos —sin almacenarse, todo
-            en directo desde Spotify.
+
+          {/* Presence — salas en vivo */}
+          <GlassCard className="p-4">
+            <div className="mb-2 flex items-center justify-between">
+              <div className="text-[10px] uppercase tracking-[0.25em] text-white/35">Salas en vivo</div>
+              <Link to="/app/rooms" className="text-[10px] text-white/40 hover:text-white/70 transition-colors">
+                Ver todas →
+              </Link>
+            </div>
+            <ActivityFeed max={4} />
           </GlassCard>
         </motion.div>
       </div>
+
+      {/* Recuerdos / Memories */}
+      <motion.div variants={fadeUp} className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="text-xs uppercase tracking-[0.28em] text-white/50">Mis recuerdos</div>
+          <span className="text-[10px] text-white/30 italic">Cada época visitada queda guardada</span>
+        </div>
+        <MemoryTimeline limit={5} />
+      </motion.div>
 
       {/* Selector épocas */}
       <motion.div variants={fadeUp} className="space-y-3">

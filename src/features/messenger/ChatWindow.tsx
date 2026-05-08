@@ -60,12 +60,7 @@ export function ChatWindow({ peerId }: { peerId: string }) {
       if (!alive) return;
       setPeer(u.user);
       setMessages(peerId, m.messages);
-      // mark read
-      try {
-        await api.post(`/messages/${peerId}/read`);
-      } catch {/*ignore*/}
-      const s = getSocket(accessToken);
-      s?.emit("chat:read", { peerId });
+      getSocket(accessToken);
     })();
     return () => {
       alive = false;
@@ -85,11 +80,11 @@ export function ChatWindow({ peerId }: { peerId: string }) {
     SFX.send();
     socket?.emit(
       "chat:send",
-      { receiverId: peerId, message: value, type: "text" },
+      { receiverId: peerId, content: value, messageType: "text" },
       (res: { ok: boolean; message?: Message }) => {
         if (!res?.ok) {
           // fallback REST
-          api.post("/messages", { receiverId: peerId, message: value }).then((r) => {
+          api.post("/messages", { receiverId: peerId, content: value, messageType: "text" }).then((r) => {
             appendMessage(peerId, r.data.message);
           });
         }
@@ -113,10 +108,10 @@ export function ChatWindow({ peerId }: { peerId: string }) {
     socket?.emit("chat:nudge", { receiverId: peerId });
     appendMessage(peerId, {
       id: `local-${Date.now()}`,
+      conversationId: "",
       senderId: me!.id,
-      receiverId: peerId,
-      message: "💢 has enviado un zumbido",
-      type: "nudge",
+      content: "💢 has enviado un zumbido",
+      messageType: "nudge",
       createdAt: new Date().toISOString(),
     });
   };
@@ -183,7 +178,7 @@ export function ChatWindow({ peerId }: { peerId: string }) {
             <div className="space-y-1.5">
               {group.items.map((m) => {
                 const mine = m.senderId === me?.id;
-                if (m.type === "nudge") {
+                if (m.messageType === "nudge") {
                   return (
                     <div key={m.id} className="my-2 text-center text-xs text-msn-orange/80">
                       💢 {mine ? "Tú" : peer?.displayName} envió un zumbido
@@ -207,7 +202,7 @@ export function ChatWindow({ peerId }: { peerId: string }) {
                             : "rounded-bl-md bg-white/[0.07] text-white/90"
                         )}
                       >
-                        {m.message}
+                        {m.content}
                       </div>
                       <div className={clsx("mt-1 text-[10px] text-white/35", mine ? "text-right" : "text-left")}>
                         {new Date(m.createdAt).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}

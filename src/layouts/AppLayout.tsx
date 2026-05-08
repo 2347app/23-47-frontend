@@ -1,12 +1,13 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Home, MessageSquare, Sofa, Clock4, User2, LogOut, Volume2, VolumeX } from "lucide-react";
+import { Home, MessageSquare, Sofa, Clock4, User2, LogOut, Radio } from "lucide-react";
+import { ActivityFeed } from "../features/presence/ActivityFeed";
 import clsx from "clsx";
 import { Backdrop } from "../components/backdrops/Backdrop";
 import { NightToggle } from "../components/NightToggle";
 import { Avatar } from "../components/Avatar";
 import { useAuthStore } from "../store/auth.store";
-import { useAudioStore } from "../store/audio.store";
+import { AudioControl } from "../components/AudioControl";
 import { useSocket } from "../hooks/useSocket";
 import { useEffect } from "react";
 import { applyEraToRoot, findEra } from "../themes/eras";
@@ -15,8 +16,6 @@ import { useEraStore } from "../store/era.store";
 export function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
-  const muted = useAudioStore((s) => s.muted);
-  const toggleMute = useAudioStore((s) => s.toggleMute);
   const navigate = useNavigate();
   useSocket();
 
@@ -43,6 +42,7 @@ export function AppLayout() {
   const navItems: Array<{ to: string; label: string; icon: any }> = [
     { to: "/app", label: "Inicio", icon: Home },
     { to: "/app/messenger", label: "Messenger", icon: MessageSquare },
+    { to: "/app/rooms", label: "Salas", icon: Radio },
     { to: "/app/room", label: "Habitación", icon: Sofa },
     { to: "/app/eras", label: "Épocas", icon: Clock4 },
     { to: "/app/profile", label: "Perfil", icon: User2 },
@@ -84,13 +84,7 @@ export function AppLayout() {
 
         <div className="flex items-center gap-2">
           <NightToggle />
-          <button
-            onClick={toggleMute}
-            className="btn-icon"
-            title={muted ? "Activar sonido" : "Silenciar"}
-          >
-            {muted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-          </button>
+          <AudioControl />
           {user && (
             <motion.div
               className="ml-1 hidden cursor-default items-center gap-2 rounded-full py-1 pl-1 pr-3 md:flex"
@@ -141,6 +135,18 @@ export function AppLayout() {
               )}
             </NavLink>
           ))}
+
+          {/* Presence activity feed */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="mt-3 rounded-xl p-3"
+            style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.05)" }}
+          >
+            <div className="mb-2 text-[9px] uppercase tracking-[0.28em] text-white/30">En vivo</div>
+            <ActivityFeed max={4} />
+          </motion.div>
 
           {/* Era info card */}
           <motion.div

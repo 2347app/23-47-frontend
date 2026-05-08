@@ -2,13 +2,19 @@ import { create } from "zustand";
 
 export interface Message {
   id: string;
+  conversationId: string;
   senderId: string;
-  receiverId: string;
-  message: string;
-  type: "text" | "nudge" | "sticker" | "spotify";
-  metadata?: any;
+  content: string;
+  messageType: "text" | "nudge" | "spotify";
   createdAt: string;
-  readAt?: string | null;
+  deletedAt?: string | null;
+  receiverId?: string;
+  sender?: {
+    id: string;
+    username: string;
+    displayName: string;
+    avatarUrl?: string | null;
+  };
 }
 
 interface ChatState {

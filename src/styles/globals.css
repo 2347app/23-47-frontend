@@ -314,6 +314,53 @@ body {
   }
 }
 
+  /* ── Volume slider vertical ──────────────────────────────────── */
+  .volume-slider-vertical {
+    -webkit-appearance: slider-vertical;
+    appearance: auto;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    width: 6px;
+    height: 68px;
+    cursor: pointer;
+    accent-color: var(--era-accent);
+    background: transparent;
+    outline: none;
+  }
+  .volume-slider-vertical::-webkit-slider-runnable-track {
+    width: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.12);
+  }
+  .volume-slider-vertical::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--era-accent);
+    box-shadow: 0 0 8px var(--era-accent);
+    margin-left: -4px;
+    cursor: pointer;
+    transition: box-shadow 0.2s ease;
+  }
+  .volume-slider-vertical::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 14px var(--era-accent);
+  }
+  .volume-slider-vertical::-moz-range-track {
+    width: 4px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.12);
+  }
+  .volume-slider-vertical::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--era-accent);
+    box-shadow: 0 0 8px var(--era-accent);
+    border: none;
+    cursor: pointer;
+  }
+
 /* ── Reduce motion ────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

@@ -25,6 +25,7 @@ export interface Era {
   references: string[];
   newsHeadlines: string[];
   musicSeed: string[];
+  microMemories: string[];
 }
 
 export const ERAS: Era[] = [
@@ -48,6 +49,13 @@ export const ERAS: Era[] = [
     references: ["Winamp", "MSN Plus!", "Encarta", "Foros nocturnos"],
     newsHeadlines: ["Skype acaba de nacer", "Matrix Reloaded en cines", "MySpace empieza"],
     musicSeed: ["Moby - Lift Me Up", "Air - La Femme d'Argent", "Massive Attack - Teardrop"],
+    microMemories: [
+      "Tus padres ya dormían.",
+      "Seguías conectado.",
+      "Alguien estaba escribiendo…",
+      "El módem seguía encendido.",
+      "No querías que acabase.",
+    ],
   },
   {
     id: "tarde-2003",
@@ -69,6 +77,13 @@ export const ERAS: Era[] = [
     references: ["MSN Messenger 6", "Winamp skins", "Emule", "Kazaa"],
     newsHeadlines: ["Emule reina en las descargas", "Pop 2000 en MTV", "El boom de los foros"],
     musicSeed: ["Outkast - Hey Ya", "Justin Timberlake - Cry Me A River", "Beyoncé - Crazy in Love"],
+    microMemories: [
+      "La tarde no quería acabarse.",
+      "Escuchabas música demasiado tarde.",
+      "MSN abierto desde las cuatro.",
+      "El verano era infinito entonces.",
+      "Winamp en bucle desde siempre.",
+    ],
   },
   {
     id: "sabado-2002",
@@ -90,6 +105,13 @@ export const ERAS: Era[] = [
     references: ["PlayStation 2", "GBA", "Dragon Ball Z", "Pokémon anime"],
     newsHeadlines: ["GTA Vice City arrasa", "El Lord of the Rings en cines", "Habbo Hotel llega"],
     musicSeed: ["Eminem - Lose Yourself", "Nelly - Hot in Herre", "Avril Lavigne - Complicated"],
+    microMemories: [
+      "Los dibujos acababan de terminar.",
+      "La PS2 seguía encendida.",
+      "No había prisa para nada.",
+      "Un sábado sin final.",
+      "El tiempo era todo tuyo.",
+    ],
   },
   {
     id: "verano-2000",
@@ -111,6 +133,13 @@ export const ERAS: Era[] = [
     references: ["Pokémon Oro y Plata", "MSN Messenger 1.0", "Walkman", "Cybercafés"],
     newsHeadlines: ["El módem 56k es el rey", "Y2K sin apocalipsis", "Napster revoluciona la música"],
     musicSeed: ["Eiffel 65 - Blue", "Britney Spears - Oops!", "Modjo - Lady"],
+    microMemories: [
+      "La canción tardaba cinco minutos en cargar.",
+      "El inicio de todo.",
+      "Olías a protector solar.",
+      "Napster era magia entonces.",
+      "El futuro sonaba diferente.",
+    ],
   },
   {
     id: "otono-2004",
@@ -132,6 +161,13 @@ export const ERAS: Era[] = [
     references: ["Fotolog", "MSN 6.2", "iPod mini", "MySpace"],
     newsHeadlines: ["Facebook abre solo a universitarios", "Half-Life 2 lo cambia todo", "Auge de los blogs"],
     musicSeed: ["Snow Patrol - Run", "Green Day - Boulevard of Broken Dreams", "Linkin Park - Numb"],
+    microMemories: [
+      "Lluvia en la ventana.",
+      "Las conversaciones duraban horas.",
+      "Tu nick tenía corazones.",
+      "Nadie se quería desconectar.",
+      "Escribías despacio para alargar el momento.",
+    ],
   },
   {
     id: "verano-2005",
@@ -153,6 +189,13 @@ export const ERAS: Era[] = [
     references: ["Fotolog", "MySpace perfiles", "MSN nudges", "Punk-o-rama"],
     newsHeadlines: ["YouTube nace este año", "Blogs en su pico máximo", "Emo y pop punk dominan"],
     musicSeed: ["My Chemical Romance - Helena", "Fall Out Boy - Sugar We're Goin Down", "The Killers - Mr. Brightside"],
+    microMemories: [
+      "El Fotolog se actualizaba despacio.",
+      "Pop punk a todo volumen.",
+      "Guardabas las fotos para subirlas después.",
+      "El verano que internet se volvió social.",
+      "Eras quien querías ser.",
+    ],
   },
   {
     id: "navidad-2007",
@@ -174,6 +217,13 @@ export const ERAS: Era[] = [
     references: ["Tuenti", "Nintendo Wii", "iPhone original", "Windows Vista"],
     newsHeadlines: ["Apple presenta el iPhone", "YouTube en su esplendor", "Wii vende millones"],
     musicSeed: ["Justice - D.A.N.C.E.", "Daft Punk - Digital Love", "Avril Lavigne - Innocence"],
+    microMemories: [
+      "Nieve fuera, Wii dentro.",
+      "El iPhone que aún no era tuyo.",
+      "Tuenti recién llegado.",
+      "El año que todo cambió sin saberlo.",
+      "Aún quedaba magia.",
+    ],
   },
   {
     id: "primavera-2009",
@@ -195,6 +245,13 @@ export const ERAS: Era[] = [
     references: ["Tuenti", "Spotify europeo", "Megaupload", "Twitter naciente"],
     newsHeadlines: ["Spotify cruza Europa", "Twitter explota", "Bitcoin nace en silencio"],
     musicSeed: ["Phoenix - 1901", "MGMT - Kids", "Empire of the Sun - Walking on a Dream"],
+    microMemories: [
+      "Tardes de sol entre exámenes.",
+      "Spotify llegaba a Europa.",
+      "Bitcoin nacía en silencio.",
+      "Todo estaba por pasar.",
+      "La primavera olía a posibilidad.",
+    ],
   },
 ];
 

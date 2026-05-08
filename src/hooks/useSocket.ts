@@ -3,6 +3,7 @@ import { Socket } from "socket.io-client";
 import { useAuthStore } from "../store/auth.store";
 import { usePresenceStore } from "../store/presence.store";
 import { useChatStore, type Message } from "../store/chat.store";
+import { useRoomsStore } from "../store/rooms.store";
 import { useEraStore } from "../store/era.store";
 import { findEra } from "../themes/eras";
 import { disconnectSocket, getSocket } from "../websocket/socket";
@@ -26,6 +27,7 @@ export function useSocket(): Socket | null {
 
     const presence = usePresenceStore.getState();
     const chat = useChatStore.getState();
+    const rooms = useRoomsStore.getState();
 
     const onReady = () => {
       socket.emit("presence:list", null, (res: { online: string[] }) => {
@@ -71,6 +73,12 @@ export function useSocket(): Socket | null {
         }, 40);
       }
     };
+    const onRoomPresence = (e: { type: "join" | "leave"; userId: string; username: string; slug: string }) => {
+      rooms.onPresence(e);
+    };
+    const onRoomMembers = ({ slug, members }: { slug: string; members: { userId: string; username: string }[] }) => {
+      useRoomsStore.getState().setMembers(slug, members);
+    };
     const onEraChange = ({ userId: uid, era: eraId }: { userId: string; era: string }) => {
       if (uid !== userId) return;
       const era = findEra(eraId);
@@ -85,6 +93,8 @@ export function useSocket(): Socket | null {
     socket.on("chat:typing", onTyping);
     socket.on("chat:nudge", onNudge);
     socket.on("era:change", onEraChange);
+    socket.on("room:presence", onRoomPresence);
+    socket.on("room:members", onRoomMembers);
 
     return () => {
       socket.off("session:ready", onReady);
@@ -95,6 +105,8 @@ export function useSocket(): Socket | null {
       socket.off("chat:typing", onTyping);
       socket.off("chat:nudge", onNudge);
       socket.off("era:change", onEraChange);
+      socket.off("room:presence", onRoomPresence);
+      socket.off("room:members", onRoomMembers);
     };
   }, [token, userId]);
 

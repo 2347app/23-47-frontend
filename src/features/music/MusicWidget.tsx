@@ -4,6 +4,7 @@ import { Music2, ExternalLink, Disc3 } from "lucide-react";
 import { api, API_BASE_URL } from "../../services/api";
 import { GlassCard } from "../../components/GlassCard";
 import { useAuthStore } from "../../store/auth.store";
+import { useMusicAtmosphere } from "../../hooks/useMusicAtmosphere";
 
 interface CurrentTrack {
   isPlaying: boolean;
@@ -22,6 +23,8 @@ export function MusicWidget() {
   const user = useAuthStore((s) => s.user);
   const [data, setData] = useState<CurrentTrack | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useMusicAtmosphere(!!data?.isPlaying, data?.track?.name);
 
   const fetchTrack = async () => {
     if (!user?.spotifyConnected) return;

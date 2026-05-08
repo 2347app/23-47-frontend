@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Headphones, MessageSquareHeart, Sparkles, Sofa, Clock4, Radio } from "lucide-react";
 import { Backdrop } from "../components/backdrops/Backdrop";
 import { GlassCard } from "../components/GlassCard";
+import { AudioControl } from "../components/AudioControl";
 import { ERAS } from "../themes/eras";
 import { fadeUp, stagger } from "../animations/variants";
 import { SFX } from "../audio/soundManager";
@@ -37,6 +38,7 @@ export function LandingPage() {
           <a href="#manifesto" className="transition hover:text-white">Manifiesto</a>
         </nav>
         <div className="flex items-center gap-2">
+          <AudioControl />
           <Link to="/login" className="btn-ghost text-xs">Entrar</Link>
           <Link to="/register" className="btn-primary text-xs">Reconectar</Link>
         </div>

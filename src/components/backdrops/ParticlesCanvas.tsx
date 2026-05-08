@@ -7,6 +7,8 @@ interface P {
   y: number;
   vx: number;
   vy: number;
+  baseVx: number;
+  baseVy: number;
   r: number;
   a: number;
   targetA: number;
@@ -26,10 +28,12 @@ export function ParticlesCanvas({
   mode = "fireflies",
   color = "#ffd29a",
   density = 80,
+  mouseRef,
 }: {
   mode?: Mode;
   color?: string;
   density?: number;
+  mouseRef?: React.RefObject<{ x: number; y: number }>;
 }) {
   const ref = useRef<HTMLCanvasElement>(null);
 
@@ -45,6 +49,11 @@ export function ParticlesCanvas({
     let parts: P[] = [];
     let tick_n = 0;
     const [cr, cg, cb] = hexToRgb(color);
+
+    // Mouse influence constants per mode
+    const MOUSE_RADIUS = 130;
+    const MOUSE_FORCE = mode === "fireflies" ? 0.28 : mode === "snow" ? 0.14 : 0.18;
+    const DAMPEN = mode === "fireflies" ? 0.93 : 0.95;
 
     function setup() {
       if (!canvas || !ctx) return;
@@ -62,15 +71,11 @@ export function ParticlesCanvas({
     function spawn(initial = false): P {
       const depth = Math.random();
       const depthScale = 0.4 + depth * 0.6;
-
       const base: P = {
         x: Math.random() * w,
         y: initial ? Math.random() * h : -8,
-        vx: 0,
-        vy: 0,
-        r: 0,
-        a: 0,
-        targetA: 0,
+        vx: 0, vy: 0, baseVx: 0, baseVy: 0,
+        r: 0, a: 0, targetA: 0,
         depth,
         phase: Math.random() * Math.PI * 2,
         phaseSpeed: 0.006 + Math.random() * 0.012,
@@ -80,26 +85,30 @@ export function ParticlesCanvas({
       if (mode === "fireflies") {
         base.y = initial ? Math.random() * h : Math.random() * h;
         base.x = initial ? Math.random() * w : Math.random() * w;
-        base.vx = (Math.random() - 0.5) * 0.18 * depthScale;
-        base.vy = (Math.random() - 0.5) * 0.12 * depthScale;
+        base.baseVx = (Math.random() - 0.5) * 0.18 * depthScale;
+        base.baseVy = (Math.random() - 0.5) * 0.12 * depthScale;
+        base.vx = base.baseVx; base.vy = base.baseVy;
         base.r = (0.8 + Math.random() * 1.8) * depthScale;
         base.targetA = (0.3 + Math.random() * 0.55) * depthScale;
       } else if (mode === "snow") {
         base.y = initial ? Math.random() * h : -8;
-        base.vy = (0.25 + Math.random() * 0.5) * depthScale;
-        base.vx = (Math.random() - 0.5) * 0.3;
+        base.baseVy = (0.25 + Math.random() * 0.5) * depthScale;
+        base.baseVx = (Math.random() - 0.5) * 0.3;
+        base.vx = base.baseVx; base.vy = base.baseVy;
         base.r = (0.6 + Math.random() * 1.2) * depthScale;
         base.targetA = (0.25 + Math.random() * 0.5) * depthScale;
       } else if (mode === "embers") {
         base.y = initial ? Math.random() * h : h + 8;
-        base.vy = -(0.35 + Math.random() * 0.65) * depthScale;
-        base.vx = (Math.random() - 0.5) * 0.3;
+        base.baseVy = -(0.35 + Math.random() * 0.65) * depthScale;
+        base.baseVx = (Math.random() - 0.5) * 0.3;
+        base.vx = base.baseVx; base.vy = base.baseVy;
         base.r = (0.5 + Math.random() * 1.1) * depthScale;
         base.targetA = (0.35 + Math.random() * 0.5) * depthScale;
       } else if (mode === "leaves") {
         base.y = initial ? Math.random() * h : -8;
-        base.vy = (0.18 + Math.random() * 0.35) * depthScale;
-        base.vx = (-0.35 - Math.random() * 0.35) * depthScale;
+        base.baseVy = (0.18 + Math.random() * 0.35) * depthScale;
+        base.baseVx = (-0.35 - Math.random() * 0.35) * depthScale;
+        base.vx = base.baseVx; base.vy = base.baseVy;
         base.r = (1.4 + Math.random() * 2.0) * depthScale;
         base.targetA = (0.2 + Math.random() * 0.45) * depthScale;
       }
@@ -116,16 +125,32 @@ export function ParticlesCanvas({
       tick_n++;
       ctx.clearRect(0, 0, w, h);
 
+      const mx = mouseRef?.current?.x ?? -9999;
+      const my = mouseRef?.current?.y ?? -9999;
+
       for (const p of parts) {
         p.phase += p.phaseSpeed;
 
         const sineX = Math.sin(p.phase) * 0.22 * (0.5 + p.depth * 0.5);
         const sineY = Math.cos(p.phase * 0.7) * 0.12 * (0.5 + p.depth * 0.5);
 
+        // Mouse repulsion
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < MOUSE_RADIUS && dist > 1) {
+          const force = (1 - dist / MOUSE_RADIUS) * MOUSE_FORCE * p.depth;
+          p.vx += (dx / dist) * force;
+          p.vy += (dy / dist) * force;
+        }
+
+        // Dampen back toward base velocity
+        p.vx = p.vx * DAMPEN + p.baseVx * (1 - DAMPEN);
+        p.vy = p.vy * DAMPEN + p.baseVy * (1 - DAMPEN);
+
         if (mode === "fireflies") {
           p.x += p.vx + sineX;
           p.y += p.vy + sineY;
-
           const pulsedA = p.targetA * (0.6 + 0.4 * Math.sin(p.phase * 1.4));
           p.a += (pulsedA - p.a) * 0.04;
         } else {
@@ -152,11 +177,7 @@ export function ParticlesCanvas({
         const oob =
           p.x < -20 || p.x > w + 20 ||
           p.y < -20 || p.y > h + 20;
-
-        if (oob) {
-          const fresh = spawn(false);
-          Object.assign(p, fresh);
-        }
+        if (oob) Object.assign(p, spawn(false));
       }
       raf = requestAnimationFrame(tick);
     }
@@ -167,7 +188,7 @@ export function ParticlesCanvas({
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", setup);
     };
-  }, [mode, color, density]);
+  }, [mode, color, density, mouseRef]);
 
   return <canvas ref={ref} className="pointer-events-none fixed inset-0 z-0" aria-hidden />;
 }

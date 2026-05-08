@@ -13,6 +13,7 @@ import { EraPage } from "./pages/EraPage";
 import { RoomPage } from "./pages/RoomPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
+import { RoomsPage } from "./pages/RoomsPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 
 import { AppLayout } from "./layouts/AppLayout";
@@ -75,6 +76,7 @@ export default function App() {
       >
         <Route index element={<HomePage />} />
         <Route path="messenger" element={<MessengerPage />} />
+        <Route path="rooms" element={<RoomsPage />} />
         <Route path="eras" element={<EraPage />} />
         <Route path="room" element={<RoomPage />} />
         <Route path="profile" element={<ProfilePage />} />

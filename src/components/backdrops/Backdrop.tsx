@@ -1,6 +1,9 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef } from "react";
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { useEraStore } from "../../store/era.store";
 import { useNightMode } from "../../hooks/useNightMode";
+import { useAmbient } from "../../hooks/useAmbient";
+import { MicroRecuerdos } from "../MicroRecuerdos";
 import { RainCanvas } from "./RainCanvas";
 import { StarsCanvas } from "./StarsCanvas";
 import { ParticlesCanvas } from "./ParticlesCanvas";
@@ -9,10 +12,32 @@ export function Backdrop() {
   const era = useEraStore((s) => s.currentEra);
   const isNight = useNightMode();
   const palette = era.palette;
+  useAmbient();
+
+  // ── Mouse parallax ─────────────────────────────────────────────────
+  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const mX = useMotionValue(0);
+  const mY = useMotionValue(0);
+  const springX = useSpring(mX, { stiffness: 32, damping: 22 });
+  const springY = useSpring(mY, { stiffness: 32, damping: 22 });
+  // Deeper layer moves subtler
+  const springX2 = useTransform(springX, (v) => v * 0.38);
+  const springY2 = useTransform(springY, (v) => v * 0.38);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      mouseRef.current = { x: e.clientX, y: e.clientY };
+      mX.set((e.clientX / window.innerWidth - 0.5) * 24);
+      mY.set((e.clientY / window.innerHeight - 0.5) * 16);
+    };
+    window.addEventListener("mousemove", handler, { passive: true });
+    return () => window.removeEventListener("mousemove", handler);
+  }, [mX, mY]);
 
   return (
     <>
-      {/* ── Gradiente base de época — respira lentamente ── */}
+      {/* ── Gradiente base de época — parallax capa profunda ── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={era.id + "-bg"}
@@ -22,6 +47,9 @@ export function Backdrop() {
           exit={{ opacity: 0 }}
           transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
           style={{
+            x: springX,
+            y: springY,
+            scale: 1.04,
             background: `
               radial-gradient(ellipse 140% 80% at 75% -5%, ${palette.accent}22, transparent 55%),
               radial-gradient(ellipse 100% 60% at -5% 95%, ${palette.glow}16, transparent 55%),
@@ -32,19 +60,14 @@ export function Backdrop() {
         />
       </AnimatePresence>
 
-      {/* ── Capa de respiración — pulso muy lento ── */}
+      {/* ── Capa de respiración — parallax capa media ── */}
       <motion.div
         className="pointer-events-none fixed inset-0 z-0"
-        animate={{
-          opacity: [0.4, 0.7, 0.4],
-          scale: [1, 1.012, 1],
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
+        animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.012, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
         style={{
+          x: springX2,
+          y: springY2,
           background: `radial-gradient(ellipse 80% 50% at 50% 50%, ${palette.accent}0d, transparent 65%)`,
         }}
       />
@@ -66,7 +89,7 @@ export function Backdrop() {
         }}
       />
 
-      {/* ── Partículas / efectos de época ── */}
+      {/* ── Partículas / efectos de época — con mouse reactivity ── */}
       <AnimatePresence mode="wait">
         <motion.div
           key={era.id + "-particles"}
@@ -77,11 +100,11 @@ export function Backdrop() {
           className="pointer-events-none"
         >
           {era.particles === "rain"      && <RainCanvas color={palette.glow} density={280} />}
-          {era.particles === "stars"     && <StarsCanvas color={palette.glow} />}
-          {era.particles === "snow"      && <ParticlesCanvas mode="snow"      color={palette.glow}   density={130} />}
-          {era.particles === "fireflies" && <ParticlesCanvas mode="fireflies" color={palette.glow}   density={65}  />}
-          {era.particles === "leaves"    && <ParticlesCanvas mode="leaves"    color={palette.accent} density={45}  />}
-          {era.particles === "embers"    && <ParticlesCanvas mode="embers"    color={palette.accent} density={55}  />}
+          {era.particles === "stars"     && <StarsCanvas color={palette.glow} mouseRef={mouseRef} />}
+          {era.particles === "snow"      && <ParticlesCanvas mode="snow"      color={palette.glow}   density={130} mouseRef={mouseRef} />}
+          {era.particles === "fireflies" && <ParticlesCanvas mode="fireflies" color={palette.glow}   density={65}  mouseRef={mouseRef} />}
+          {era.particles === "leaves"    && <ParticlesCanvas mode="leaves"    color={palette.accent} density={45}  mouseRef={mouseRef} />}
+          {era.particles === "embers"    && <ParticlesCanvas mode="embers"    color={palette.accent} density={55}  mouseRef={mouseRef} />}
         </motion.div>
       </AnimatePresence>
 
@@ -123,6 +146,9 @@ export function Backdrop() {
 
       {/* ── CRT screen overlay: scanline sweep + aberración cromática ── */}
       <div className="crt-screen" aria-hidden />
+
+      {/* ── Micro recuerdos emocionales ── */}
+      <MicroRecuerdos />
     </>
   );
 }
