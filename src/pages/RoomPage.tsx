@@ -6,6 +6,7 @@ import { GlassCard } from "../components/GlassCard";
 import { api } from "../services/api";
 import { useEraStore } from "../store/era.store";
 import { fadeUp, stagger } from "../animations/variants";
+import { RoomObjectVisual } from "../features/room/RoomObjectVisual";
 
 interface RoomItem {
   id: string;
@@ -17,30 +18,37 @@ interface RoomItem {
   metadata?: any;
 }
 
+interface AtmosphereProfile {
+  lightingProfile: string;
+  ambientType: string;
+  colorTemperature: number;
+  crtGrain: boolean;
+  monitorGlow: boolean;
+  depthFog: boolean;
+  timeOfDay: string;
+  emotionalHaze: number;
+  breathingSpeed: number;
+  vignette: number;
+  contrast: number;
+}
+
 interface DigitalRoom {
   id: string;
   theme: string;
   background?: string | null;
   musicTheme?: string | null;
   ambient?: string | null;
+  nostalgiaData?: { atmosphere?: AtmosphereProfile; narrativeMoment?: string } | null;
   items: RoomItem[];
 }
 
-const ICONS: Record<string, string> = {
-  poster: "🖼️",
-  console: "🎮",
-  lamp: "🛋️",
-  crt: "🖥️",
-  plant: "🪴",
-  vinyl: "💿",
-  photo: "📷",
-  computer: "💻",
-  phone: "📞",
-  bed: "🛏️",
-  window: "🪟",
+const ITEM_ICONS: Record<string, string> = {
+  poster: "🖼️", console: "🎮", lamp: "🛋️", crt: "🖥️",
+  plant: "🪴", vinyl: "💿", photo: "📷", computer: "💻",
+  phone: "📞", bed: "🛏️", window: "🪟",
 };
 
-const ITEM_TYPES = Object.entries(ICONS).map(([type, icon]) => ({
+const ITEM_TYPES = Object.entries(ITEM_ICONS).map(([type, icon]) => ({
   type,
   icon,
   label: type.charAt(0).toUpperCase() + type.slice(1),
@@ -49,14 +57,12 @@ const ITEM_TYPES = Object.entries(ICONS).map(([type, icon]) => ({
 // --------------- Sub-componente item arrastrable ---------------
 function DraggableRoomItem({
   item,
-  era,
   editMode,
   containerRef,
   onMove,
   onDelete,
 }: {
   item: RoomItem;
-  era: any;
   editMode: boolean;
   containerRef: React.RefObject<HTMLDivElement>;
   onMove: (id: string, x: number, y: number) => void;
@@ -79,8 +85,9 @@ function DraggableRoomItem({
     [item.positionX, item.positionY, containerRef, onMove, x, y],
   );
 
-  const icon = ICONS[item.type] ?? "✨";
   const label: string = item.metadata?.label ?? item.type;
+  const depth: number = item.metadata?.depth ?? 3;
+  const blur: number = item.metadata?.imperfection?.blurAmount ?? 0;
 
   return (
     <div
@@ -88,8 +95,9 @@ function DraggableRoomItem({
       style={{
         left: `${item.positionX}%`,
         top: `${item.positionY}%`,
-        transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg)`,
-        zIndex: editMode ? 10 : 1,
+        transform: `translate(-50%, -50%) rotate(${item.rotation ?? 0}deg) scale(${item.scale ?? 1})`,
+        zIndex: editMode ? 20 : depth,
+        filter: blur > 0 ? `blur(${blur * 2}px)` : undefined,
       }}
     >
       <motion.div
@@ -97,26 +105,20 @@ function DraggableRoomItem({
         dragMomentum={false}
         dragElastic={0}
         style={{ x, y, cursor: editMode ? "grab" : "default" }}
-        whileDrag={{ scale: 1.18, cursor: "grabbing" }}
+        whileDrag={{ scale: 1.1, cursor: "grabbing" }}
         onDragEnd={handleDragEnd}
-        className="group relative flex flex-col items-center"
+        className="group relative"
         title={label}
       >
-        <span
-          className="select-none text-4xl drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] md:text-5xl"
-          style={{ filter: `drop-shadow(0 0 12px ${era.palette.accent}66)` }}
-        >
-          {icon}
-        </span>
-        <span className="pointer-events-none mt-1 rounded-full bg-black/50 px-2 py-0.5 text-[10px] text-white/80 opacity-0 transition group-hover:opacity-100">
+        <RoomObjectVisual type={item.type} label={label} monitorGlow={item.type === "crt"} isNight />
+        <span className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/60 px-2 py-0.5 text-[9px] text-white/70 opacity-0 transition group-hover:opacity-100">
           {label}
         </span>
         {editMode && (
           <button
             onPointerDown={(e) => e.stopPropagation()}
             onClick={() => onDelete(item.id)}
-            className="absolute -right-3 -top-3 flex h-5 w-5 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100"
-            title="Eliminar"
+            className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500/80 text-white opacity-0 transition hover:bg-red-500 group-hover:opacity-100"
           >
             <X size={10} />
           </button>
@@ -129,11 +131,12 @@ function DraggableRoomItem({
 export function RoomPage() {
   const era = useEraStore((s) => s.currentEra);
   const [room, setRoom] = useState<DigitalRoom | null>(null);
-  const [memories, setMemories] = useState("");
   const [loading, setLoading] = useState(false);
   const [rebuilding, setRebuilding] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [addingType, setAddingType] = useState<string | null>(null);
+  const [reconstructInput, setReconstructInput] = useState("");
+  const [atmosphere, setAtmosphere] = useState<AtmosphereProfile | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -141,6 +144,9 @@ export function RoomPage() {
     try {
       const { data } = await api.get("/rooms/me");
       setRoom(data.room);
+      if (data.room?.nostalgiaData?.atmosphere) {
+        setAtmosphere(data.room.nostalgiaData.atmosphere);
+      }
     } finally {
       setLoading(false);
     }
@@ -195,10 +201,12 @@ export function RoomPage() {
   };
 
   const rebuild = async () => {
+    if (!reconstructInput.trim()) { toast.error("Escribe algún recuerdo primero"); return; }
     setRebuilding(true);
     try {
-      await api.post("/ai/rebuild-room", { era: era.id, memories, apply: true });
-      toast.success("Tu habitación digital ha sido reconstruida 🌙");
+      const { data } = await api.post("/ai/room/reconstruct", { input: reconstructInput, apply: true });
+      if (data.atmosphere) setAtmosphere(data.atmosphere);
+      toast.success(data.narrativeMoment ?? "Tu habitación ha sido reconstruida 🌙");
       await load();
     } catch (err: any) {
       toast.error(err?.response?.data?.error ?? "No se pudo reconstruir");
@@ -207,19 +215,19 @@ export function RoomPage() {
     }
   };
 
-  const ambient = room?.ambient ?? era.ambient;
+  const ambient = room?.ambient ?? atmosphere?.ambientType ?? era.ambient;
+  const isNight = atmosphere ? ["night", "late_night"].includes(atmosphere.timeOfDay) : true;
 
-  const bgStyle = useMemo(
-    () =>
-      ({
-        background: `
-          radial-gradient(60% 80% at 80% 20%, ${era.palette.accent}55, transparent 60%),
-          radial-gradient(60% 60% at 20% 80%, ${era.palette.glow}45, transparent 60%),
-          linear-gradient(180deg, ${era.palette.surface}, ${era.palette.bg})
-        `,
-      }) as React.CSSProperties,
-    [era],
-  );
+  const roomBg = useMemo(() => {
+    if (atmosphere?.monitorGlow) return "linear-gradient(180deg, #090d16 0%, #0c1020 100%)";
+    if (isNight) return "linear-gradient(180deg, #0a0a10 0%, #0d0d14 100%)";
+    return "linear-gradient(180deg, #141220 0%, #100e1c 100%)";
+  }, [atmosphere, isNight]);
+
+  const monitorGlowPos = useMemo(() => {
+    const crtItem = room?.items?.find((i) => i.type === "crt");
+    return crtItem ? { left: `${crtItem.positionX}%`, top: `${crtItem.positionY}%` } : { left: "28%", top: "45%" };
+  }, [room?.items]);
 
   return (
     <motion.div variants={stagger(0.06)} initial="hidden" animate="visible" className="space-y-6">
@@ -262,18 +270,56 @@ export function RoomPage() {
           <div
             ref={containerRef}
             className="relative h-[420px] w-full overflow-hidden md:h-[520px]"
-            style={bgStyle}
+            style={{
+              background: roomBg,
+              filter: atmosphere ? `contrast(${atmosphere.contrast})` : undefined,
+            }}
           >
-            {/* Suelo simulado */}
+            {/* Wall */}
+            <div className="pointer-events-none absolute inset-x-0 top-0" style={{ height: "62%", background: "rgba(255,255,255,0.015)" }} />
+            {/* Skirting board */}
+            <div className="pointer-events-none absolute inset-x-0" style={{ top: "62%", height: 2, background: "rgba(255,255,255,0.04)" }} />
+            {/* Floor */}
             <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3"
-              style={{ background: `linear-gradient(180deg, transparent, ${era.palette.bg})` }}
-            />
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 opacity-30"
+              className="pointer-events-none absolute inset-x-0 bottom-0"
               style={{
-                backgroundImage:
-                  "repeating-linear-gradient(90deg, rgba(255,255,255,0.06) 0 2px, transparent 2px 24px)",
+                height: "38%",
+                background: "linear-gradient(180deg, #080810, #050508)",
+                backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 44px)",
+              }}
+            />
+            {/* Monitor glow */}
+            {atmosphere?.monitorGlow && (
+              <div
+                className="pointer-events-none absolute"
+                style={{
+                  ...monitorGlowPos,
+                  width: 280, height: 280,
+                  transform: "translate(-50%, -50%)",
+                  background: "radial-gradient(ellipse, rgba(20,70,210,0.28) 0%, transparent 68%)",
+                  filter: "blur(32px)",
+                  zIndex: 0,
+                }}
+              />
+            )}
+            {/* CRT grain */}
+            {atmosphere?.crtGrain && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  opacity: 0.04,
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+                  backgroundSize: "120px 120px",
+                  zIndex: 8,
+                }}
+              />
+            )}
+            {/* Vignette */}
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at 50% 50%, transparent 32%, rgba(0,0,0,${atmosphere?.vignette ?? 0.55}) 100%)`,
+                zIndex: 9,
               }}
             />
 
@@ -282,7 +328,6 @@ export function RoomPage() {
               <DraggableRoomItem
                 key={item.id}
                 item={item}
-                era={era}
                 editMode={editMode}
                 containerRef={containerRef}
                 onMove={handleMove}
@@ -361,22 +406,31 @@ export function RoomPage() {
       <motion.div variants={fadeUp}>
         <GlassCard className="p-6">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/50">
-            <Wand2 size={14} /> reconstruye mi adolescencia digital
+            <Wand2 size={14} /> reconstrucción emocional
           </div>
           <p className="mt-2 text-sm text-white/65">
-            Cuéntale a la IA un par de recuerdos —canciones, juegos, posters, foros— y
-            reconstruirá tu cuarto online en {era.label}.
+            Describe tu adolescencia digital —canciones, juegos, posters, hábitos online— y la
+            IA reconstruirá la sensación exacta de esa habitación.
           </p>
+          {room?.nostalgiaData?.narrativeMoment && (
+            <p className="mt-3 border-l-2 border-white/10 pl-3 text-xs italic text-white/40">
+              {room.nostalgiaData.narrativeMoment}
+            </p>
+          )}
           <textarea
-            value={memories}
-            onChange={(e) => setMemories(e.target.value)}
+            value={reconstructInput}
+            onChange={(e) => setReconstructInput(e.target.value)}
             rows={4}
             className="input mt-4"
             placeholder="“Ponía Linkin Park, jugaba al PES en PS2, tenía un póster de Avril Lavigne…”"
           />
           <div className="mt-4 flex justify-end">
-            <button onClick={rebuild} disabled={rebuilding} className="btn-primary text-xs">
-              {rebuilding ? "Reconstruyendo…" : `Reconstruir en ${era.label}`}
+            <button
+              onClick={rebuild}
+              disabled={rebuilding || !reconstructInput.trim()}
+              className="btn-primary text-xs"
+            >
+              {rebuilding ? "Reconstruyendo memoria…" : "Reconstruir habitación"}
             </button>
           </div>
         </GlassCard>
