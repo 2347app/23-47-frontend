@@ -137,10 +137,12 @@ export function RoomPage() {
   const [addingType, setAddingType] = useState<string | null>(null);
   const [reconstructInput, setReconstructInput] = useState("");
   const [atmosphere, setAtmosphere] = useState<AtmosphereProfile | null>(null);
+  const [imageError, setImageError] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
+    setImageError(false);
     try {
       const { data } = await api.get("/rooms/me");
       setRoom(data.room);
@@ -206,6 +208,10 @@ export function RoomPage() {
     try {
       const { data } = await api.post("/ai/room/reconstruct", { input: reconstructInput, apply: true });
       if (data.atmosphere) setAtmosphere(data.atmosphere);
+      if (data.imageUrl) {
+        setImageError(false);
+        setRoom((prev) => prev ? { ...prev, background: data.imageUrl } : prev);
+      }
       toast.success(data.narrativeMoment ?? "Tu habitación ha sido reconstruida 🌙");
       await load();
     } catch (err: any) {
@@ -217,6 +223,7 @@ export function RoomPage() {
 
   const ambient = room?.ambient ?? atmosphere?.ambientType ?? era.ambient;
   const isNight = atmosphere ? ["night", "late_night"].includes(atmosphere.timeOfDay) : true;
+  const hasRoomImage = !!room?.background?.startsWith("http") && !imageError;
 
   const roomBg = useMemo(() => {
     if (atmosphere?.monitorGlow) return "linear-gradient(180deg, #090d16 0%, #0c1020 100%)";
@@ -275,56 +282,68 @@ export function RoomPage() {
               filter: atmosphere ? `contrast(${atmosphere.contrast})` : undefined,
             }}
           >
-            {/* Wall */}
-            <div className="pointer-events-none absolute inset-x-0 top-0" style={{ height: "62%", background: "rgba(255,255,255,0.015)" }} />
-            {/* Skirting board */}
-            <div className="pointer-events-none absolute inset-x-0" style={{ top: "62%", height: 2, background: "rgba(255,255,255,0.04)" }} />
-            {/* Floor */}
-            <div
-              className="pointer-events-none absolute inset-x-0 bottom-0"
-              style={{
-                height: "38%",
-                background: "linear-gradient(180deg, #080810, #050508)",
-                backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 44px)",
-              }}
-            />
-            {/* Monitor glow */}
-            {atmosphere?.monitorGlow && (
-              <div
-                className="pointer-events-none absolute"
-                style={{
-                  ...monitorGlowPos,
-                  width: 280, height: 280,
-                  transform: "translate(-50%, -50%)",
-                  background: "radial-gradient(ellipse, rgba(20,70,210,0.28) 0%, transparent 68%)",
-                  filter: "blur(32px)",
-                  zIndex: 0,
-                }}
+            {/* ── DALL-E generated image (primary) ── */}
+            {hasRoomImage ? (
+              <img
+                src={room!.background!}
+                onError={() => setImageError(true)}
+                className="absolute inset-0 h-full w-full object-cover"
+                style={{ zIndex: 1, opacity: editMode ? 0.45 : 1, transition: "opacity 0.4s" }}
+                alt="Habitación generada"
               />
+            ) : (
+              <>
+                {/* CSS fallback: wall + floor */}
+                <div className="pointer-events-none absolute inset-x-0 top-0" style={{ height: "62%", background: "rgba(255,255,255,0.015)" }} />
+                <div className="pointer-events-none absolute inset-x-0" style={{ top: "62%", height: 2, background: "rgba(255,255,255,0.04)" }} />
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0"
+                  style={{
+                    height: "38%",
+                    background: "linear-gradient(180deg, #080810, #050508)",
+                    backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.018) 0 1px, transparent 1px 44px)",
+                  }}
+                />
+                {/* Monitor glow (CSS mode only) */}
+                {atmosphere?.monitorGlow && (
+                  <div
+                    className="pointer-events-none absolute"
+                    style={{
+                      ...monitorGlowPos,
+                      width: 280, height: 280,
+                      transform: "translate(-50%, -50%)",
+                      background: "radial-gradient(ellipse, rgba(20,70,210,0.28) 0%, transparent 68%)",
+                      filter: "blur(32px)",
+                      zIndex: 0,
+                    }}
+                  />
+                )}
+              </>
             )}
-            {/* CRT grain */}
+
+            {/* CRT grain (always) */}
             {atmosphere?.crtGrain && (
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
-                  opacity: 0.04,
+                  opacity: 0.045,
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
                   backgroundSize: "120px 120px",
-                  zIndex: 8,
+                  zIndex: 10,
                 }}
               />
             )}
-            {/* Vignette */}
+            {/* Vignette (always) */}
             <div
               className="pointer-events-none absolute inset-0"
               style={{
-                background: `radial-gradient(ellipse at 50% 50%, transparent 32%, rgba(0,0,0,${atmosphere?.vignette ?? 0.55}) 100%)`,
-                zIndex: 9,
+                background: `radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,${atmosphere?.vignette ?? 0.6}) 100%)`,
+                zIndex: 11,
               }}
             />
 
-            {/* Items arrastrables */}
-            {(room?.items ?? []).map((item) => (
+            {/* CSS items — always in edit mode, only when no image in view mode */}
+            {(!hasRoomImage || editMode) && (room?.items ?? []).map((item) => (
               <DraggableRoomItem
                 key={item.id}
                 item={item}
@@ -334,6 +353,17 @@ export function RoomPage() {
                 onDelete={handleDelete}
               />
             ))}
+
+            {/* Expired image notice */}
+            {imageError && (
+              <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 12 }}>
+                <div className="rounded-xl border border-white/10 bg-black/60 px-5 py-3 text-center text-xs text-white/50 backdrop-blur">
+                  La imagen de la habitación ha expirado.
+                  <br />
+                  <span className="cursor-pointer text-white/70 underline" onClick={rebuild}>Regenerar</span>
+                </div>
+              </div>
+            )}
 
             {/* Estado vacío */}
             {(!room?.items || room.items.length === 0) && !loading && (
