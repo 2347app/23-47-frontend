@@ -19,6 +19,7 @@ class AmbientEngine {
   private currentLayer: ActiveLayer | null = null;
   private currentType: AmbientType = "none";
   private pendingType: AmbientType = "none";
+  private emotionalMod: number = 1.0;
 
   constructor() {
     if (typeof window === "undefined") return;
@@ -332,7 +333,7 @@ class AmbientEngine {
     }
 
     const { muted, volume } = useAudioStore.getState();
-    const target = muted ? 0 : volume * 0.42;
+    const target = muted ? 0 : volume * 0.42 * this.emotionalMod;
     layer.gainNode.gain.setValueAtTime(0, c.currentTime);
     layer.gainNode.gain.setTargetAtTime(target, c.currentTime, 1.8);
     this.currentLayer = layer;
@@ -351,10 +352,15 @@ class AmbientEngine {
     }
   }
 
+  setEmotionalMod(mod: number): void {
+    this.emotionalMod = Math.max(0.15, Math.min(1.5, mod));
+    this.updateVolume();
+  }
+
   updateVolume(): void {
     if (!this.currentLayer || !this.ctx) return;
     const { muted, volume } = useAudioStore.getState();
-    const target = muted ? 0 : volume * 0.42;
+    const target = muted ? 0 : volume * 0.42 * this.emotionalMod;
     this.currentLayer.gainNode.gain.setTargetAtTime(target, this.ctx.currentTime, 0.3);
   }
 

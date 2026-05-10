@@ -9,6 +9,10 @@ import { fadeUp, stagger } from "../animations/variants";
 import { RoomObjectVisual } from "../features/room/RoomObjectVisual";
 import { ReconstructionCinematic } from "../features/room/ReconstructionCinematic";
 import { NostalgiaPacksSection } from "../features/room/NostalgiaPacksSection";
+import { useRoomDnaStore } from "../store/room-dna.store";
+import { calculateEmotionalProfile, getWhisperPool } from "../services/runtime-emotion-engine";
+import { useRoomBreathing } from "../hooks/useRoomBreathing";
+import { ambientEngine } from "../audio/ambientEngine";
 
 interface RoomItem {
   id: string;
@@ -154,6 +158,12 @@ export function RoomPage() {
   const [detectedEra, setDetectedEra] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ── Emotional DNA layer ─────────────────────────────────────────────────
+  const { dna, setDna } = useRoomDnaStore();
+  const profile = useMemo(() => (dna ? calculateEmotionalProfile(dna) : null), [dna]);
+  const breathValue = useRoomBreathing(profile?.breathingSpeed ?? 14, profile?.breathingDepth ?? 0.4);
+  const [whisper, setWhisper] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     setImageError(false);
@@ -171,6 +181,35 @@ export function RoomPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  // Load current DNA + apply behavioral mutation from backend
+  useEffect(() => {
+    api.get("/ai/room/dna")
+      .then(({ data }) => { if (data.dna) setDna(data.dna, data.shouldRegenerate ?? false); })
+      .catch(() => {});
+  }, [setDna]);
+
+  // Drive ambient sound + emotional volume from DNA profile
+  useEffect(() => {
+    if (!profile) return;
+    ambientEngine.setAmbient(profile.ambientType);
+    ambientEngine.setEmotionalMod(profile.audioVolumeMod);
+    return () => { ambientEngine.setEmotionalMod(1.0); };
+  }, [profile?.ambientType, profile?.audioVolumeMod]);
+
+  // Ambient memory whispers — float as thoughts, not notifications
+  useEffect(() => {
+    if (!profile || !dna) return;
+    const pool = getWhisperPool(dna);
+    if (pool.length === 0) return;
+    const show = () => {
+      const msg = pool[Math.floor(Math.random() * pool.length)]!;
+      setWhisper(msg);
+      setTimeout(() => setWhisper(null), 8500);
+    };
+    const id = setInterval(show, profile.whisperIntervalMs);
+    return () => clearInterval(id);
+  }, [profile?.whisperIntervalMs, dna?.internetCulture, dna?.musicIdentity]);
 
   const handleMove = useCallback(async (id: string, newX: number, newY: number) => {
     setRoom((prev) =>
@@ -227,6 +266,7 @@ export function RoomPage() {
       });
       if (data.atmosphere) setAtmosphere(data.atmosphere);
       if (data.era) setDetectedEra(data.era);
+      if (data.roomDna) setDna(data.roomDna);
       if (data.imageUrl) {
         setImageError(false);
         setRoom((prev) => prev ? { ...prev, background: data.imageUrl } : prev);
@@ -334,7 +374,7 @@ export function RoomPage() {
                       ...monitorGlowPos,
                       width: 280, height: 280,
                       transform: "translate(-50%, -50%)",
-                      background: "radial-gradient(ellipse, rgba(20,70,210,0.28) 0%, transparent 68%)",
+                      background: `radial-gradient(ellipse, ${profile?.glowColor ?? "rgba(20,70,210,0.28)"} 0%, transparent 68%)`,
                       filter: "blur(32px)",
                       zIndex: 0,
                     }}
@@ -343,26 +383,74 @@ export function RoomPage() {
               </>
             )}
 
+            {/* ── Breathing warmth (slow emotional tint oscillation) ── */}
+            {profile && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background: profile.warmthOverlay,
+                  opacity: 0.028 + breathValue * 0.032 * profile.breathingDepth,
+                  zIndex: 2,
+                  transition: "opacity 1.5s ease",
+                }}
+              />
+            )}
+
+            {/* ── DNA ambient glow (emotional light source) ── */}
+            <div
+              className="pointer-events-none absolute"
+              style={{
+                left: "50%", top: "52%",
+                width: 460, height: 340,
+                transform: "translate(-50%, -50%)",
+                background: `radial-gradient(ellipse, ${profile?.glowColor ?? "rgba(40,60,200,0.14)"} 0%, transparent 70%)`,
+                opacity: profile
+                  ? (0.45 + breathValue * 0.38 * profile.glowIntensity) * (hasRoomImage ? 0.4 : 1)
+                  : 0.22,
+                filter: "blur(48px)",
+                zIndex: 3,
+              }}
+            />
+
             {/* CRT grain (always) */}
             {atmosphere?.crtGrain && (
               <div
                 className="pointer-events-none absolute inset-0"
                 style={{
-                  opacity: 0.045,
+                  opacity: profile?.noiseLevel ?? 0.045,
                   backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
                   backgroundSize: "120px 120px",
                   zIndex: 10,
                 }}
               />
             )}
-            {/* Vignette (always) */}
+            {/* Vignette (always — depth driven by DNA profile) */}
             <div
               className="pointer-events-none absolute inset-0"
               style={{
-                background: `radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,${atmosphere?.vignette ?? 0.6}) 100%)`,
+                background: `radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0,0,0,${profile?.vignetteStrength ?? atmosphere?.vignette ?? 0.6}) 100%)`,
                 zIndex: 11,
               }}
             />
+
+            {/* ── Ambient memory whisper ── */}
+            <AnimatePresence>
+              {whisper && !editMode && (
+                <motion.div
+                  key={whisper}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 2.8, ease: "easeInOut" }}
+                  className="pointer-events-none absolute bottom-7 left-0 right-0 px-10 text-center"
+                  style={{ zIndex: 13 }}
+                >
+                  <p className="text-[10px] italic tracking-widest text-white/28">
+                    {whisper}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* CSS items — always in edit mode, only when no image in view mode */}
             {(!hasRoomImage || editMode) && (room?.items ?? []).map((item) => (
