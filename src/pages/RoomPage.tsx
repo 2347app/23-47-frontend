@@ -7,6 +7,8 @@ import { api } from "../services/api";
 import { useEraStore } from "../store/era.store";
 import { fadeUp, stagger } from "../animations/variants";
 import { RoomObjectVisual } from "../features/room/RoomObjectVisual";
+import { ReconstructionCinematic } from "../features/room/ReconstructionCinematic";
+import { NostalgiaPacksSection } from "../features/room/NostalgiaPacksSection";
 
 interface RoomItem {
   id: string;
@@ -42,17 +44,27 @@ interface DigitalRoom {
   items: RoomItem[];
 }
 
-const ITEM_ICONS: Record<string, string> = {
-  poster: "🖼️", console: "🎮", lamp: "🛋️", crt: "🖥️",
-  plant: "🪴", vinyl: "💿", photo: "📷", computer: "💻",
-  phone: "📞", bed: "🛏️", window: "🪟",
-};
-
-const ITEM_TYPES = Object.entries(ITEM_ICONS).map(([type, icon]) => ({
-  type,
-  icon,
-  label: type.charAt(0).toUpperCase() + type.slice(1),
-}));
+const ITEM_TYPES: Array<{ type: string; icon: string; label: string; spanish?: boolean }> = [
+  { type: "poster",       icon: "🖼️",  label: "Poster" },
+  { type: "crt",         icon: "🖥️",  label: "CRT" },
+  { type: "computer",    icon: "💻",  label: "PC" },
+  { type: "console",     icon: "🎮",  label: "Consola" },
+  { type: "lamp",        icon: "🛋️",  label: "Lámpara" },
+  { type: "plant",       icon: "🪴",  label: "Planta" },
+  { type: "vinyl",       icon: "💿",  label: "Vinilo" },
+  { type: "photo",       icon: "📷",  label: "Foto" },
+  { type: "bed",         icon: "🛏️",  label: "Cama" },
+  { type: "window",      icon: "🪟",  label: "Ventana" },
+  // ── Cultura material española 2000s ─────────────────────
+  { type: "fan",         icon: "🌀",  label: "Ventilador",  spanish: true },
+  { type: "blind",       icon: "🪟",  label: "Persiana",    spanish: true },
+  { type: "cd_stack",    icon: "💿",  label: "CDs grabados", spanish: true },
+  { type: "nokia",       icon: "📱",  label: "Nokia",       spanish: true },
+  { type: "ps2",         icon: "🎮",  label: "PlayStation 2", spanish: true },
+  { type: "walkman",     icon: "🎵",  label: "Walkman",     spanish: true },
+  { type: "magazine",    icon: "📰",  label: "Revista",     spanish: true },
+  { type: "pencil_case", icon: "✏️",  label: "Estuche",     spanish: true },
+];
 
 // --------------- Sub-componente item arrastrable ---------------
 function DraggableRoomItem({
@@ -138,6 +150,8 @@ export function RoomPage() {
   const [reconstructInput, setReconstructInput] = useState("");
   const [atmosphere, setAtmosphere] = useState<AtmosphereProfile | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [forceImage, setForceImage] = useState(false);
+  const [detectedEra, setDetectedEra] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
 
   const load = useCallback(async () => {
@@ -206,8 +220,13 @@ export function RoomPage() {
     if (!reconstructInput.trim()) { toast.error("Escribe algún recuerdo primero"); return; }
     setRebuilding(true);
     try {
-      const { data } = await api.post("/ai/room/reconstruct", { input: reconstructInput, apply: true });
+      const { data } = await api.post("/ai/room/reconstruct", {
+        input: reconstructInput,
+        apply: true,
+        forceImage,
+      });
       if (data.atmosphere) setAtmosphere(data.atmosphere);
+      if (data.era) setDetectedEra(data.era);
       if (data.imageUrl) {
         setImageError(false);
         setRoom((prev) => prev ? { ...prev, background: data.imageUrl } : prev);
@@ -237,6 +256,9 @@ export function RoomPage() {
   }, [room?.items]);
 
   return (
+    <>
+      <ReconstructionCinematic active={rebuilding} era={detectedEra || era.label} />
+
     <motion.div variants={stagger(0.06)} initial="hidden" animate="visible" className="space-y-6">
       <motion.div variants={fadeUp}>
         <GlassCard variant="strong" className="p-6">
@@ -412,12 +434,30 @@ export function RoomPage() {
                     Añadir objeto
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {ITEM_TYPES.map(({ type, icon, label }) => (
+                    {ITEM_TYPES.filter((t) => !t.spanish).map(({ type, icon, label }) => (
                       <button
                         key={type}
                         onClick={() => handleAdd(type)}
                         disabled={addingType === type}
                         className="chip flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition hover:bg-white/15 disabled:opacity-50"
+                        title={`Añadir ${label}`}
+                      >
+                        <span>{icon}</span>
+                        <span className="text-[11px] capitalize text-white/70">{label}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mb-2 mt-3 text-[10px] uppercase tracking-widest text-white/25">
+                    🇪🇸 Cultura 2000s
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {ITEM_TYPES.filter((t) => t.spanish).map(({ type, icon, label }) => (
+                      <button
+                        key={type}
+                        onClick={() => handleAdd(type)}
+                        disabled={addingType === type}
+                        className="chip flex cursor-pointer items-center gap-1.5 px-3 py-1.5 text-sm transition hover:bg-white/15 disabled:opacity-50"
+                        style={{ borderColor: "rgba(255,200,100,0.2)" }}
                         title={`Añadir ${label}`}
                       >
                         <span>{icon}</span>
@@ -447,6 +487,11 @@ export function RoomPage() {
               {room.nostalgiaData.narrativeMoment}
             </p>
           )}
+          <div className="mt-4 border-t border-white/[0.06] pt-4">
+            <NostalgiaPacksSection
+              onSelect={(prompt) => setReconstructInput(prompt)}
+            />
+          </div>
           <textarea
             value={reconstructInput}
             onChange={(e) => setReconstructInput(e.target.value)}
@@ -454,17 +499,27 @@ export function RoomPage() {
             className="input mt-4"
             placeholder="“Ponía Linkin Park, jugaba al PES en PS2, tenía un póster de Avril Lavigne…”"
           />
-          <div className="mt-4 flex justify-end">
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <label className="flex cursor-pointer items-center gap-2 text-xs text-white/45 select-none">
+              <input
+                type="checkbox"
+                checked={forceImage}
+                onChange={(e) => setForceImage(e.target.checked)}
+                className="h-3.5 w-3.5 accent-white/70"
+              />
+              Regenerar imagen visual (DALL-E 3)
+            </label>
             <button
               onClick={rebuild}
               disabled={rebuilding || !reconstructInput.trim()}
               className="btn-primary text-xs"
             >
-              {rebuilding ? "Reconstruyendo memoria…" : "Reconstruir habitación"}
+              {rebuilding ? "Reconstruyendo…" : "Reconstruir habitación"}
             </button>
           </div>
         </GlassCard>
       </motion.div>
     </motion.div>
+    </>
   );
 }

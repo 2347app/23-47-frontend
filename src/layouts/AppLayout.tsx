@@ -12,6 +12,8 @@ import { useSocket } from "../hooks/useSocket";
 import { useEffect } from "react";
 import { applyEraToRoot, findEra } from "../themes/eras";
 import { useEraStore } from "../store/era.store";
+import { AmbientMemoryInjector } from "../features/memories/AmbientMemoryInjector";
+import { MobileNostalgiaMode } from "../features/mobile/MobileNostalgiaMode";
 
 export function AppLayout() {
   const user = useAuthStore((s) => s.user);
@@ -51,6 +53,8 @@ export function AppLayout() {
   return (
     <div className="relative min-h-screen text-white">
       <Backdrop />
+      <AmbientMemoryInjector />
+      <MobileNostalgiaMode />
 
       {/* ── Top bar ─────────────────────────────────────────────── */}
       <header
