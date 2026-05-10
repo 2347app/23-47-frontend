@@ -263,7 +263,7 @@ export function RoomPage() {
         input: reconstructInput,
         apply: true,
         forceImage,
-      });
+      }, { timeout: 60_000 });
       if (data.atmosphere) setAtmosphere(data.atmosphere);
       if (data.era) setDetectedEra(data.era);
       if (data.roomDna) setDna(data.roomDna);

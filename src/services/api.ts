@@ -25,7 +25,7 @@ export function configureTokens(opts: {
 export const api: AxiosInstance = axios.create({
   baseURL: `${API_URL}/api`,
   withCredentials: true,
-  timeout: 15_000,
+  timeout: 20_000,
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
