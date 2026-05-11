@@ -12,6 +12,7 @@ import { NostalgiaPacksSection } from "../features/room/NostalgiaPacksSection";
 import { useRoomDnaStore } from "../store/room-dna.store";
 import { calculateEmotionalProfile, getWhisperPool } from "../services/runtime-emotion-engine";
 import { useRoomBreathing } from "../hooks/useRoomBreathing";
+import { useMouseParallax } from "../hooks/useMouseParallax";
 import { ambientEngine } from "../audio/ambientEngine";
 
 interface RoomItem {
@@ -154,6 +155,7 @@ export function RoomPage() {
   const [reconstructInput, setReconstructInput] = useState("");
   const [atmosphere, setAtmosphere] = useState<AtmosphereProfile | null>(null);
   const [imageError, setImageError] = useState(false);
+  const [roomRevealed, setRoomRevealed] = useState(false);
   const [forceImage, setForceImage] = useState(false);
   const [detectedEra, setDetectedEra] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -162,6 +164,7 @@ export function RoomPage() {
   const { dna, setDna } = useRoomDnaStore();
   const profile = useMemo(() => (dna ? calculateEmotionalProfile(dna) : null), [dna]);
   const breathValue = useRoomBreathing(profile?.breathingSpeed ?? 14, profile?.breathingDepth ?? 0.4);
+  const parallax    = useMouseParallax({ strength: 0.018, smoothing: 0.06 });
   const [whisper, setWhisper] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -344,13 +347,33 @@ export function RoomPage() {
               filter: atmosphere ? `contrast(${atmosphere.contrast})` : undefined,
             }}
           >
-            {/* ── DALL-E generated image (primary) ── */}
+            {/* ── Emotional return: atmospheric reveal overlay ── */}
+            {hasRoomImage && (
+              <div
+                className="pointer-events-none absolute inset-0"
+                style={{
+                  background: "radial-gradient(ellipse at 50% 40%, rgba(0,0,0,0) 30%, rgba(0,0,0,0.92) 100%)",
+                  opacity: roomRevealed ? 0 : 1,
+                  transition: "opacity 2.2s ease",
+                  zIndex: 20,
+                }}
+              />
+            )}
+
+            {/* ── DALL-E generated image (primary) — parallax layer 0 ── */}
             {hasRoomImage ? (
               <img
                 src={room!.background!}
                 onError={() => setImageError(true)}
+                onLoad={() => { setTimeout(() => setRoomRevealed(true), 120); }}
                 className="absolute inset-0 h-full w-full object-cover"
-                style={{ zIndex: 1, opacity: editMode ? 0.45 : 1, transition: "opacity 0.4s" }}
+                style={{
+                  zIndex: 1,
+                  opacity: editMode ? 0.45 : 1,
+                  transition: "opacity 0.4s",
+                  transform: `scale(1.06) translate(${parallax.x * -18}px, ${parallax.y * -12}px)`,
+                  willChange: "transform",
+                }}
                 alt="Habitación generada"
               />
             ) : (
