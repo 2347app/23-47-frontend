@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Users, LogIn, LogOut } from "lucide-react";
 import { GlassCard } from "../components/GlassCard";
@@ -55,6 +56,18 @@ export function RoomsPage() {
     socket?.emit("room:leave", { slug });
     leave();
   };
+
+  // Leave active room when navigating away from the page
+  useEffect(() => {
+    return () => {
+      const slug = useRoomsStore.getState().activeSlug;
+      if (slug) {
+        const socket = getSocket(useAuthStore.getState().accessToken);
+        socket?.emit("room:leave", { slug });
+        useRoomsStore.getState().leave();
+      }
+    };
+  }, []);
 
   return (
     <motion.div variants={stagger(0.07)} initial="hidden" animate="visible" className="space-y-6">

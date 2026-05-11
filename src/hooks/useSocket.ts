@@ -56,10 +56,20 @@ export function useSocket(): Socket | null {
     const onTyping = ({ from, typing }: { from: string; typing: boolean }) => {
       chat.setTyping(from, typing);
     };
-    const onNudge = ({ from }: { from: string }) => {
+    const onNudge = ({ from, fromUsername }: { from: string; fromUsername?: string }) => {
       SFX.nudge();
-      toast(`💢 ${from === userId ? "Tú" : "Alguien"} mandó un zumbido`, { icon: "📳" });
-      // efecto vibracion en root
+      const label = fromUsername ?? from;
+      toast(`💢 ${label} te mandó un zumbido`, { icon: "📳" });
+      // Append message in the conversation so the recipient sees it
+      chat.appendMessage(from, {
+        id: `nudge-${Date.now()}`,
+        conversationId: "",
+        senderId: from,
+        content: `💢 ${label} te mandó un zumbido`,
+        messageType: "nudge",
+        createdAt: new Date().toISOString(),
+      });
+      // efecto vibración en root
       const root = document.getElementById("root");
       if (root) {
         root.style.transition = "transform 0.05s";
