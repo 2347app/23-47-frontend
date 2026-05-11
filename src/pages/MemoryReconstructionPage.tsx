@@ -931,84 +931,116 @@ function IsometricRoom({
   pickedItem:  typeof ROOM_ITEMS[number] | null;
   onZoneClick: (zone: RoomZone) => void;
 }) {
-  const W = 250, H = 138, D = 158;
+  const W = 260, H = 148, D = 168;
+  const [rotY, setRotY] = useState(0);
+  const drag = useRef<{ startX: number; startRot: number; moved: boolean } | null>(null);
   const shared = { placed, pickedItem, onZoneClick };
 
+  const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (pickedItem) return;
+    drag.current = { startX: e.clientX, startRot: rotY, moved: false };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    const delta = (e.clientX - drag.current.startX) * 0.55;
+    if (Math.abs(delta) > 3) drag.current.moved = true;
+    setRotY(Math.max(-55, Math.min(55, drag.current.startRot + delta)));
+  };
+
+  const onPointerUp = () => { drag.current = null; };
+
   return (
-    <div style={{ perspective: "700px", perspectiveOrigin: "50% 28%", width: "100%" }}>
+    <div style={{ perspective: "800px", perspectiveOrigin: "50% 30%", width: "100%" }}>
+      {/* drag hint */}
+      {!pickedItem && (
+        <p className="mb-1 text-center text-[10px] text-white/20 select-none">
+          ← arrastra para girar →
+        </p>
+      )}
       <div
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
         style={{
-          position:        "relative",
-          width:            W,
-          height:           H,
-          margin:           "20px auto 52px",
-          transformStyle:   "preserve-3d",
-          transform:        "rotateX(-22deg) rotateY(16deg)",
+          position:      "relative",
+          width:          W,
+          height:         H,
+          margin:        "12px auto 60px",
+          transformStyle: "preserve-3d",
+          transform:      `rotateX(-24deg) rotateY(${rotY}deg)`,
+          cursor:         pickedItem ? "crosshair" : "grab",
+          userSelect:    "none",
         }}
       >
-        {/* Back wall — window, TV, wall items */}
+        {/* Back wall */}
         <div
           style={{
-            position:              "absolute",
-            inset:                 0,
-            display:               "grid",
-            gridTemplateColumns:   "1fr 1fr 1fr",
-            gap:                   1,
-            background:            "rgba(22,28,56,0.9)",
-            border:                "1px solid rgba(255,255,255,0.08)",
+            position:            "absolute",
+            inset:               0,
+            display:             "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap:                 2,
+            background:          "rgba(22,28,56,0.92)",
+            border:              "1px solid rgba(255,255,255,0.1)",
+            pointerEvents:       "auto",
           }}
         >
           {BACK_ZONES.map((z) => <RoomZoneButton key={z} zone={z} {...shared} />)}
         </div>
 
-        {/* Floor — desk, bed, computer, furniture */}
+        {/* Floor */}
         <div
           style={{
-            position:              "absolute",
-            width:                  W,
-            height:                 D,
-            top:                    H,
-            left:                   0,
-            transformOrigin:        "top center",
-            transform:              "rotateX(-90deg)",
-            display:               "grid",
-            gridTemplateColumns:   "1fr 1fr 1fr",
-            gridTemplateRows:      "1fr 1fr",
-            gap:                    1,
-            background:            "rgba(14,18,40,0.9)",
-            border:                "1px solid rgba(255,255,255,0.05)",
+            position:            "absolute",
+            width:                W,
+            height:               D,
+            top:                  H,
+            left:                 0,
+            transformOrigin:     "top center",
+            transform:           "rotateX(-90deg)",
+            display:             "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gridTemplateRows:    "1fr 1fr",
+            gap:                  2,
+            background:          "rgba(14,18,42,0.92)",
+            border:              "1px solid rgba(255,255,255,0.06)",
+            pointerEvents:       "auto",
           }}
         >
           {FLOOR_ZONES.map((z) => <RoomZoneButton key={z} zone={z} {...shared} />)}
         </div>
 
-        {/* Right side wall — decorative depth */}
+        {/* Right side wall — decorative only */}
         <div
           style={{
-            position:        "absolute",
-            width:            Math.round(D * 0.52),
-            height:           H,
-            top:              0,
-            left:             W,
-            transformOrigin: "left center",
-            transform:       "rotateY(90deg)",
-            background:      "rgba(17,21,46,0.85)",
-            border:          "1px solid rgba(255,255,255,0.05)",
+            position:       "absolute",
+            width:           Math.round(D * 0.52),
+            height:          H,
+            top:             0,
+            left:            W,
+            transformOrigin:"left center",
+            transform:      "rotateY(90deg)",
+            background:     "rgba(17,21,46,0.85)",
+            border:         "1px solid rgba(255,255,255,0.05)",
+            pointerEvents:  "none",
           }}
         />
 
-        {/* Ceiling strip — depth cue */}
+        {/* Ceiling strip — decorative only */}
         <div
           style={{
-            position:        "absolute",
-            width:            W,
-            height:           Math.round(D * 0.32),
-            top:              0,
-            left:             0,
-            transformOrigin: "top center",
-            transform:       "rotateX(90deg)",
-            background:      "rgba(26,32,58,0.55)",
-            border:          "1px solid rgba(255,255,255,0.04)",
+            position:       "absolute",
+            width:           W,
+            height:          Math.round(D * 0.32),
+            top:             0,
+            left:            0,
+            transformOrigin:"top center",
+            transform:      "rotateX(90deg)",
+            background:     "rgba(26,32,58,0.5)",
+            border:         "1px solid rgba(255,255,255,0.04)",
+            pointerEvents:  "none",
           }}
         />
       </div>
