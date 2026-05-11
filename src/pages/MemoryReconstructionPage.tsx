@@ -946,7 +946,7 @@ function IsometricRoom({
     if (!drag.current) return;
     const delta = (e.clientX - drag.current.startX) * 0.55;
     if (Math.abs(delta) > 3) drag.current.moved = true;
-    setRotY(Math.max(-55, Math.min(55, drag.current.startRot + delta)));
+    setRotY(drag.current.startRot + delta);
   };
 
   const onPointerUp = () => { drag.current = null; };
