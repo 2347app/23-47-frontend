@@ -105,6 +105,9 @@ const ROOM_ZONES: RoomZone[] = [
   "bot-left", "bot-center", "bot-right",
 ];
 
+const BACK_ZONES:  RoomZone[] = ["top-left", "top-center", "top-right"];
+const FLOOR_ZONES: RoomZone[] = ["mid-left", "mid-center", "mid-right", "bot-left", "bot-center", "bot-right"];
+
 const ZONE_LABELS: Record<RoomZone, string> = {
   "top-left": "esquina izquierda del fondo",
   "top-center": "fondo",
@@ -315,51 +318,30 @@ export function MemoryReconstructionPage() {
           <p className="mt-1 text-sm text-white/30 italic">Toca una zona para colocar. Sin exactitud.</p>
         </motion.div>
 
-        {/* Room grid */}
-        <motion.div
-          {...fadeIn}
-          className="relative z-10 w-full max-w-sm"
-        >
-          <div
-            className="grid grid-cols-3 gap-1 rounded-xl border border-white/8 p-3"
-            style={{ aspectRatio: "4/3", background: "rgba(255,255,255,0.02)" }}
-          >
-            {ROOM_ZONES.map((zone) => {
-              const placed = memory.placed.find((p) => p.zone === zone);
-              return (
-                <button
-                  key={zone}
-                  className="flex items-center justify-center rounded-lg border border-white/5
-                             text-2xl transition-all hover:border-white/20 hover:bg-white/5
-                             active:scale-95"
-                  style={{
-                    minHeight: 64,
-                    background: placed ? "rgba(255,255,255,0.06)" : "transparent",
-                  }}
-                  onClick={() => {
-                    if (!pickedItem) return;
-                    const newPlaced = [
-                      ...memory.placed.filter((p) => p.id !== pickedItem.id && p.zone !== zone),
-                      { ...pickedItem, zone },
-                    ];
-                    setMemory((m) => ({ ...m, placed: newPlaced }));
-                    setPickedItem(null);
-                    if (pickedItem.id === "computer" && zone.includes("top")) {
-                      showSnapshot("La pantalla y la ventana en el mismo campo de visión. Eso define todo.");
-                    }
-                    if (pickedItem.id === "bed") {
-                      showSnapshot("La cama siempre en el mismo sitio. Desde ahí se veía todo.");
-                    }
-                  }}
-                >
-                  {placed ? placed.emoji : <span className="text-white/10 text-xs">{zone.replace("-", " ")}</span>}
-                </button>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-center text-xs text-white/20">
+        {/* Isometric 3D room */}
+        <motion.div {...fadeIn} className="relative z-10 w-full max-w-sm">
+          <IsometricRoom
+            placed={memory.placed}
+            pickedItem={pickedItem}
+            onZoneClick={(zone) => {
+              if (!pickedItem) return;
+              const newPlaced = [
+                ...memory.placed.filter((p) => p.id !== pickedItem.id && p.zone !== zone),
+                { ...pickedItem, zone },
+              ];
+              setMemory((m) => ({ ...m, placed: newPlaced }));
+              setPickedItem(null);
+              if (pickedItem.id === "computer" && zone.includes("top")) {
+                showSnapshot("La pantalla y la ventana en el mismo campo de visión. Eso define todo.");
+              }
+              if (pickedItem.id === "bed") {
+                showSnapshot("La cama siempre en el mismo sitio. Desde ahí se veía todo.");
+              }
+            }}
+          />
+          <p className="mt-1 text-center text-xs text-white/20">
             {pickedItem ? (
-              <span className="text-white/50">Toca una zona para colocar: {pickedItem.emoji} {pickedItem.label}</span>
+              <span className="text-white/50">Toca donde lo recuerdas: {pickedItem.emoji} {pickedItem.label}</span>
             ) : (
               "Selecciona un objeto abajo y colócalo"
             )}
@@ -749,5 +731,131 @@ function MemoryButton({ label, selected, onClick }: { label: string; selected: b
     >
       {label}
     </button>
+  );
+}
+
+// ── Isometric 3D room zone button ─────────────────────────────────────────────
+
+function RoomZoneButton({
+  zone, placed, pickedItem, onZoneClick,
+}: {
+  zone:        RoomZone;
+  placed:      PlacedItem[];
+  pickedItem:  typeof ROOM_ITEMS[number] | null;
+  onZoneClick: (zone: RoomZone) => void;
+}) {
+  const item   = placed.find((p) => p.zone === zone);
+  const active = !!pickedItem;
+  return (
+    <button
+      onClick={() => active && onZoneClick(zone)}
+      style={{
+        display:         "flex",
+        alignItems:      "center",
+        justifyContent:  "center",
+        background:      item   ? "rgba(255,255,255,0.08)" : active ? "rgba(255,255,255,0.02)" : "transparent",
+        border:          item   ? "1px solid rgba(255,255,255,0.12)" : "1px solid rgba(255,255,255,0.05)",
+        cursor:          active ? "crosshair" : "default",
+        transition:      "background 0.2s",
+      }}
+    >
+      {item   ? <span style={{ fontSize: 22, lineHeight: 1 }}>{item.emoji}</span>
+       : active ? <span style={{ fontSize: 11, color: "rgba(255,255,255,0.18)" }}>+</span>
+       : null}
+    </button>
+  );
+}
+
+// ── Isometric 3D CSS room ─────────────────────────────────────────────────────
+
+function IsometricRoom({
+  placed, pickedItem, onZoneClick,
+}: {
+  placed:      PlacedItem[];
+  pickedItem:  typeof ROOM_ITEMS[number] | null;
+  onZoneClick: (zone: RoomZone) => void;
+}) {
+  const W = 250, H = 138, D = 158;
+  const shared = { placed, pickedItem, onZoneClick };
+
+  return (
+    <div style={{ perspective: "700px", perspectiveOrigin: "50% 28%", width: "100%" }}>
+      <div
+        style={{
+          position:        "relative",
+          width:            W,
+          height:           H,
+          margin:           "20px auto 52px",
+          transformStyle:   "preserve-3d",
+          transform:        "rotateX(-22deg) rotateY(16deg)",
+        }}
+      >
+        {/* Back wall — window, TV, wall items */}
+        <div
+          style={{
+            position:              "absolute",
+            inset:                 0,
+            display:               "grid",
+            gridTemplateColumns:   "1fr 1fr 1fr",
+            gap:                   1,
+            background:            "rgba(22,28,56,0.9)",
+            border:                "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
+          {BACK_ZONES.map((z) => <RoomZoneButton key={z} zone={z} {...shared} />)}
+        </div>
+
+        {/* Floor — desk, bed, computer, furniture */}
+        <div
+          style={{
+            position:              "absolute",
+            width:                  W,
+            height:                 D,
+            top:                    H,
+            left:                   0,
+            transformOrigin:        "top center",
+            transform:              "rotateX(-90deg)",
+            display:               "grid",
+            gridTemplateColumns:   "1fr 1fr 1fr",
+            gridTemplateRows:      "1fr 1fr",
+            gap:                    1,
+            background:            "rgba(14,18,40,0.9)",
+            border:                "1px solid rgba(255,255,255,0.05)",
+          }}
+        >
+          {FLOOR_ZONES.map((z) => <RoomZoneButton key={z} zone={z} {...shared} />)}
+        </div>
+
+        {/* Right side wall — decorative depth */}
+        <div
+          style={{
+            position:        "absolute",
+            width:            Math.round(D * 0.52),
+            height:           H,
+            top:              0,
+            left:             W,
+            transformOrigin: "left center",
+            transform:       "rotateY(90deg)",
+            background:      "rgba(17,21,46,0.85)",
+            border:          "1px solid rgba(255,255,255,0.05)",
+          }}
+        />
+
+        {/* Ceiling strip — depth cue */}
+        <div
+          style={{
+            position:        "absolute",
+            width:            W,
+            height:           Math.round(D * 0.32),
+            top:              0,
+            left:             0,
+            transformOrigin: "top center",
+            transform:       "rotateX(90deg)",
+            background:      "rgba(26,32,58,0.55)",
+            border:          "1px solid rgba(255,255,255,0.04)",
+          }}
+        />
+      </div>
+    </div>
   );
 }
