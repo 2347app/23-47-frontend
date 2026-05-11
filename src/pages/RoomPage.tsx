@@ -164,7 +164,7 @@ export function RoomPage() {
   const { dna, setDna } = useRoomDnaStore();
   const profile = useMemo(() => (dna ? calculateEmotionalProfile(dna) : null), [dna]);
   const breathValue = useRoomBreathing(profile?.breathingSpeed ?? 14, profile?.breathingDepth ?? 0.4);
-  const parallax    = useMouseParallax({ strength: 0.018, smoothing: 0.06 });
+  const parallax    = useMouseParallax({ strength: 0.5, smoothing: 0.06 });
   const [whisper, setWhisper] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -371,7 +371,7 @@ export function RoomPage() {
                   zIndex: 1,
                   opacity: editMode ? 0.45 : 1,
                   transition: "opacity 0.4s",
-                  transform: `scale(1.06) translate(${parallax.x * -18}px, ${parallax.y * -12}px)`,
+                  transform: `scale(1.06) translate(${parallax.x * -14}px, ${parallax.y * -8}px)`,
                   willChange: "transform",
                 }}
                 alt="Habitación generada"
