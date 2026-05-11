@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, useMotionValue, type PanInfo } from "framer-motion";
 import { Wand2, RefreshCcw, Pencil, Check, X } from "lucide-react";
 import toast from "react-hot-toast";
@@ -146,6 +147,7 @@ function DraggableRoomItem({
 }
 
 export function RoomPage() {
+  const navigate = useNavigate();
   const era = useEraStore((s) => s.currentEra);
   const [room, setRoom] = useState<DigitalRoom | null>(null);
   const [loading, setLoading] = useState(false);
@@ -586,8 +588,17 @@ export function RoomPage() {
       {/* Reconstruir con IA */}
       <motion.div variants={fadeUp}>
         <GlassCard className="p-6">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/50">
-            <Wand2 size={14} /> reconstrucción emocional
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-[0.28em] text-white/50">
+              <Wand2 size={14} /> reconstrucción emocional
+            </div>
+            <button
+              onClick={() => navigate("/app/reconstruir")}
+              className="rounded-full border border-white/10 px-3 py-1 text-[11px] text-white/35
+                         hover:border-white/25 hover:text-white/65 transition-all"
+            >
+              Modo guiado →
+            </button>
           </div>
           <p className="mt-2 text-sm text-white/65">
             Describe tu adolescencia digital —canciones, juegos, posters, hábitos online— y la
