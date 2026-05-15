@@ -23,6 +23,8 @@ import { AuthLayout } from "./layouts/AuthLayout";
 function PrivateRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const hydrated = useAuthStore((s) => s.hydrated);
+  if (!hydrated) return null;
   if (!accessToken || !user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }

@@ -197,7 +197,7 @@ export function MemoryReconstructionPage() {
 
   if (step === "entry") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
         style={{ background: "#050508" }}>
         <BreathingRoom breathValue={breathValue} />
         <motion.div
@@ -246,7 +246,7 @@ export function MemoryReconstructionPage() {
     if (!q) return null;
     const density = computeDensity(profile);
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden px-6"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden px-6"
         style={{ background: "#050508" }}>
         <BreathingRoom breathValue={breathValue} glowColor={atm.glowColor} dim />
         <SnapshotOverlay text={snapshot} />
@@ -297,7 +297,7 @@ export function MemoryReconstructionPage() {
 
   if (step === "objects") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden py-8 px-4"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden py-8 px-4"
         style={{ background: "#050508" }}>
         <BreathingRoom breathValue={breathValue} glowColor={atm.glowColor} dim />
         <SnapshotOverlay text={snapshot} />
@@ -333,7 +333,7 @@ export function MemoryReconstructionPage() {
 
   if (step === "placement") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-between overflow-hidden py-8 px-4"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden py-8 px-4"
         style={{ background: "#050508" }}>
         <BreathingRoom breathValue={breathValue} glowColor={atm.glowColor} dim />
         <SnapshotOverlay text={snapshot} />
@@ -411,7 +411,7 @@ export function MemoryReconstructionPage() {
 
   if (step === "generating") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center"
         style={{ background: "#050508" }}>
         <BreathingRoom breathValue={breathValue} />
         <motion.div {...slowFade} className="relative z-10 flex flex-col items-center gap-6 text-center px-6">
@@ -430,7 +430,7 @@ export function MemoryReconstructionPage() {
 
   if (step === "reveal") {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden"
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden"
         style={{ background: "#050508" }}>
         {imageUrl ? (
           <>

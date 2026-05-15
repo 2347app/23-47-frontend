@@ -80,8 +80,8 @@ export function AmbientMemoryInjector({
 
     const side: "left" | "right" = Math.random() > 0.5 ? "left" : "right";
     const x = side === "left"
-      ? Math.random() * 12 + 1          // 1–13%
-      : Math.random() * 12 + 73;        // 73–85%
+      ? Math.random() * 10 + 1          // 1–11%
+      : Math.random() * 8  + 62;        // 62–70% (safe on mobile)
     const y = Math.random() * 55 + 15;  // 15–70%
 
     const active: ActiveMemory = { ...chosen, uid: uid(), x, y, side };
@@ -155,7 +155,7 @@ export function AmbientMemoryInjector({
               position: "absolute",
               left: `${m.x}%`,
               top: `${m.y}%`,
-              maxWidth: m.side === "left" ? "220px" : "200px",
+              maxWidth: "180px",
               textAlign: m.side === "left" ? "left" : "right",
               pointerEvents: "auto",
             }}

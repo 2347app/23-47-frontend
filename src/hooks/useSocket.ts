@@ -57,6 +57,7 @@ export function useSocket(): Socket | null {
       chat.setTyping(from, typing);
     };
     const onNudge = ({ from, fromUsername }: { from: string; fromUsername?: string }) => {
+      if (from === userId) return;
       SFX.nudge();
       const label = fromUsername ?? from;
       toast(`💢 ${label} te mandó un zumbido`, { icon: "📳" });
