@@ -32,7 +32,7 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         try {
           const { data } = await api.post("/auth/login", { identifier, password });
-          set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
+          set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, hydrated: true });
         } finally {
           set({ loading: false });
         }
@@ -42,7 +42,7 @@ export const useAuthStore = create<AuthState>()(
         set({ loading: true });
         try {
           const { data } = await api.post("/auth/register", input);
-          set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken });
+          set({ user: data.user, accessToken: data.accessToken, refreshToken: data.refreshToken, hydrated: true });
         } finally {
           set({ loading: false });
         }
@@ -61,9 +61,9 @@ export const useAuthStore = create<AuthState>()(
       fetchMe: async () => {
         try {
           const { data } = await api.get("/auth/me");
-          set({ user: data.user });
+          set({ user: data.user, hydrated: true });
         } catch {
-          set({ user: null, accessToken: null, refreshToken: null });
+          set({ user: null, accessToken: null, refreshToken: null, hydrated: true });
         }
       },
     }),

@@ -24,9 +24,11 @@ function PrivateRoute({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const hydrated = useAuthStore((s) => s.hydrated);
+  // Token already in memory (e.g. just logged in) — render immediately
+  if (accessToken && user) return <>{children}</>;
+  // No token yet and store not rehydrated from localStorage — wait silently
   if (!hydrated) return null;
-  if (!accessToken || !user) return <Navigate to="/login" replace />;
-  return <>{children}</>;
+  return <Navigate to="/login" replace />;
 }
 
 function PublicOnly({ children }: { children: React.ReactNode }) {
