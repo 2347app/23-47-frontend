@@ -41,11 +41,16 @@ const ROOMS = [
 
 export function RoomsPage() {
   const token = useAuthStore((s) => s.accessToken);
-  const { activeSlug, members, join, leave } = useRoomsStore();
+  const user  = useAuthStore((s) => s.user);
+  const { activeSlug, members, join, leave, onPresence } = useRoomsStore();
 
   const handleJoin = (slug: string) => {
     const socket = getSocket(token);
     if (!socket) return;
+    // Optimistically remove self from the previous room before switching
+    if (activeSlug && activeSlug !== slug && user) {
+      onPresence({ type: "leave", userId: user.id, username: user.username, slug: activeSlug });
+    }
     socket.emit("room:join", { slug }, (res: { ok: boolean }) => {
       if (res?.ok) join(slug);
     });
@@ -54,16 +59,19 @@ export function RoomsPage() {
   const handleLeave = (slug: string) => {
     const socket = getSocket(token);
     socket?.emit("room:leave", { slug });
+    // Remove self from the room's member list immediately
+    if (user) onPresence({ type: "leave", userId: user.id, username: user.username, slug });
     leave();
   };
 
   // Leave active room when navigating away from the page
   useEffect(() => {
     return () => {
-      const slug = useRoomsStore.getState().activeSlug;
+      const { activeSlug: slug } = useRoomsStore.getState();
+      const { accessToken, user: u } = useAuthStore.getState();
       if (slug) {
-        const socket = getSocket(useAuthStore.getState().accessToken);
-        socket?.emit("room:leave", { slug });
+        getSocket(accessToken)?.emit("room:leave", { slug });
+        if (u) useRoomsStore.getState().onPresence({ type: "leave", userId: u.id, username: u.username, slug });
         useRoomsStore.getState().leave();
       }
     };
