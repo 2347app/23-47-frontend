@@ -11,32 +11,39 @@ import { fadeUp, stagger } from "../animations/variants";
 
 const ROOMS = [
   {
-    slug: "rainy-2007",
-    title: "Lluvia de 2007",
-    emoji: "🌧️",
-    description: "Bajar el Messenger mientras llueve por la ventana.",
-    accent: "#6ea8fe",
-  },
-  {
-    slug: "summer-2003",
+    slug: "verano-2003",
     title: "Verano de 2003",
     emoji: "☀️",
     description: "Tardes de Fotolog y 56k sin ningún motivo.",
     accent: "#fbbf24",
   },
   {
-    slug: "messenger-2006",
-    title: "Messenger 2006",
-    emoji: "💬",
+    slug: "madrugada-2004",
+    title: "Madrugada de 2004",
+    emoji: "🌙",
+    description: "La noche en que internet parecía más humano.",
+    accent: "#818cf8",
+  },
+  {
+    slug: "lluvia-2005",
+    title: "Lluvia de 2005",
+    emoji: "🌧️",
+    description: "Bajar el Messenger mientras llueve por la ventana.",
+    accent: "#6ea8fe",
+  },
+  {
+    slug: "verano-social-2006",
+    title: "Verano Social 2006",
+    emoji: "🌊",
     description: "Emoticones, nudges y temas de MSN hasta tarde.",
     accent: "#34d399",
   },
   {
-    slug: "midnight-2009",
-    title: "Madrugada de 2009",
-    emoji: "🌙",
-    description: "La noche en que internet parecía más humano.",
-    accent: "#818cf8",
+    slug: "noche-melancolica-2007",
+    title: "Noche Melancólica de 2007",
+    emoji: "🌑",
+    description: "Football Manager, eMule y un chat abierto a las 3am.",
+    accent: "#c084fc",
   },
 ];
 
