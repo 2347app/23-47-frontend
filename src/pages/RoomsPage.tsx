@@ -1,6 +1,7 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, LogIn, LogOut } from "lucide-react";
+import { Users, LogIn } from "lucide-react";
 import { GlassCard } from "../components/GlassCard";
 import { ActivityFeed } from "../features/presence/ActivityFeed";
 import { useRoomsStore } from "../store/rooms.store";
@@ -40,42 +41,24 @@ const ROOMS = [
 ];
 
 export function RoomsPage() {
+  const navigate = useNavigate();
   const token = useAuthStore((s) => s.accessToken);
-  const user  = useAuthStore((s) => s.user);
-  const { activeSlug, members, join, leave, onPresence } = useRoomsStore();
+  const { members } = useRoomsStore();
 
-  const handleJoin = (slug: string) => {
+  // Sync all room member counts on mount
+  useEffect(() => {
     const socket = getSocket(token);
     if (!socket) return;
-    // Optimistically remove self from the previous room before switching
-    if (activeSlug && activeSlug !== slug && user) {
-      onPresence({ type: "leave", userId: user.id, username: user.username, slug: activeSlug });
-    }
-    socket.emit("room:join", { slug }, (res: { ok: boolean }) => {
-      if (res?.ok) join(slug);
-    });
-  };
-
-  const handleLeave = (slug: string) => {
-    const socket = getSocket(token);
-    socket?.emit("room:leave", { slug });
-    // Remove self from the room's member list immediately
-    if (user) onPresence({ type: "leave", userId: user.id, username: user.username, slug });
-    leave();
-  };
-
-  // Leave active room when navigating away from the page
-  useEffect(() => {
-    return () => {
-      const { activeSlug: slug } = useRoomsStore.getState();
-      const { accessToken, user: u } = useAuthStore.getState();
-      if (slug) {
-        getSocket(accessToken)?.emit("room:leave", { slug });
-        if (u) useRoomsStore.getState().onPresence({ type: "leave", userId: u.id, username: u.username, slug });
-        useRoomsStore.getState().leave();
+    socket.emit(
+      "rooms:sync",
+      null,
+      (result: Record<string, { userId: string; username: string }[]>) => {
+        Object.entries(result).forEach(([slug, list]) => {
+          useRoomsStore.getState().setMembers(slug, list);
+        });
       }
-    };
-  }, []);
+    );
+  }, [token]);
 
   return (
     <motion.div variants={stagger(0.07)} initial="hidden" animate="visible" className="space-y-6">
@@ -93,28 +76,19 @@ export function RoomsPage() {
       {/* Room cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {ROOMS.map((room) => {
-          const isActive = activeSlug === room.slug;
           const roomMembers = members[room.slug] ?? [];
           const count = roomMembers.length;
 
           return (
             <motion.div key={room.slug} variants={fadeUp}>
               <GlassCard
-                variant={isActive ? "strong" : "default"}
-                className="relative overflow-hidden p-5 transition-all duration-500"
-                style={{
-                  borderColor: isActive ? `${room.accent}40` : undefined,
-                  boxShadow: isActive ? `0 0 48px -12px ${room.accent}35` : undefined,
-                }}
+                className="relative overflow-hidden p-5 transition-all duration-300 hover:border-white/10 cursor-pointer group"
+                onClick={() => navigate(`/app/rooms/${room.slug}`)}
               >
-                {/* Active accent line at top */}
+                {/* Accent line */}
                 <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px transition-all duration-500"
-                  style={{
-                    background: isActive
-                      ? `linear-gradient(90deg, transparent, ${room.accent}, transparent)`
-                      : "rgba(255,255,255,0.05)",
-                  }}
+                  className="pointer-events-none absolute inset-x-0 top-0 h-px"
+                  style={{ background: "rgba(255,255,255,0.05)" }}
                 />
 
                 <div className="flex items-start justify-between gap-3">
@@ -128,22 +102,16 @@ export function RoomsPage() {
                       <Users size={11} />
                       <span>{count}</span>
                     </div>
-                    {isActive ? (
-                      <button onClick={() => handleLeave(room.slug)} className="btn-ghost text-xs">
-                        <LogOut size={12} /> Salir
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleJoin(room.slug)}
-                        className="btn-primary text-xs"
-                        style={{
-                          background: `linear-gradient(135deg, ${room.accent}cc, ${room.accent}77)`,
-                          color: "#04060c",
-                        }}
-                      >
-                        <LogIn size={12} /> Entrar
-                      </button>
-                    )}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); navigate(`/app/rooms/${room.slug}`); }}
+                      className="btn-primary text-xs"
+                      style={{
+                        background: `linear-gradient(135deg, ${room.accent}cc, ${room.accent}77)`,
+                        color: "#04060c",
+                      }}
+                    >
+                      <LogIn size={12} /> Entrar
+                    </button>
                   </div>
                 </div>
 

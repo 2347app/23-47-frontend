@@ -14,6 +14,7 @@ import { RoomPage } from "./pages/RoomPage";
 import { ProfilePage } from "./pages/ProfilePage";
 import { SpotifyCallbackPage } from "./pages/SpotifyCallbackPage";
 import { RoomsPage } from "./pages/RoomsPage";
+import { AtmosphericRoomPage } from "./pages/AtmosphericRoomPage";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { MemoryReconstructionPage } from "./pages/MemoryReconstructionPage";
 
@@ -82,6 +83,7 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="messenger" element={<MessengerPage />} />
         <Route path="rooms" element={<RoomsPage />} />
+        <Route path="rooms/:slug" element={<AtmosphericRoomPage />} />
         <Route path="eras" element={<EraPage />} />
         <Route path="room" element={<RoomPage />} />
         <Route path="profile" element={<ProfilePage />} />
