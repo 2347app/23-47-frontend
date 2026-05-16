@@ -5,6 +5,7 @@
 // ============================================================
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { api } from "../../services/api";
 
@@ -40,6 +41,7 @@ export function AmbientMemoryInjector({
   maxVisible = 2,
   className = "",
 }: Props) {
+  const { pathname } = useLocation();
   const [pool, setPool] = useState<AmbientMemory[]>([]);
   const [visible, setVisible] = useState<ActiveMemory[]>([]);
   const poolRef = useRef<AmbientMemory[]>([]);
@@ -136,6 +138,7 @@ export function AmbientMemoryInjector({
     };
   }, [pool, showNext]);
 
+  if (/^\/app\/rooms\/.+/.test(pathname)) return null;
   if (visible.length === 0) return null;
 
   return (
