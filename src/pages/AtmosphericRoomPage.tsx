@@ -5,6 +5,7 @@ import { ArrowLeft, Send, Users } from "lucide-react";
 import { useAuthStore } from "../store/auth.store";
 import { useRoomsStore } from "../store/rooms.store";
 import { getSocket } from "../websocket/socket";
+import { RoomSpotifyPlayer } from "../components/room/RoomSpotifyPlayer";
 
 const ROOM_META = [
   {
@@ -151,7 +152,7 @@ export function AtmosphericRoomPage() {
       </div>
 
       {/* ── Left: room info (desktop) ── */}
-      <div className="relative z-10 hidden md:flex flex-1 flex-col justify-end p-8 pb-10 pointer-events-none">
+      <div className="relative z-10 hidden md:flex flex-1 flex-col justify-end p-8 pb-10">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
@@ -184,6 +185,10 @@ export function AtmosphericRoomPage() {
             />
             {roomMembers.length} en la sala ahora
           </div>
+
+          <div className="mt-5">
+            <RoomSpotifyPlayer slug={slug!} accent={room.accent} />
+          </div>
         </motion.div>
       </div>
 
@@ -202,7 +207,7 @@ export function AtmosphericRoomPage() {
           maxHeight: "100dvh",
         }}
       >
-        {/* Mobile: room title inside panel */}
+        {/* Mobile: room title + player inside panel */}
         <div
           className="md:hidden px-4 pt-16 pb-4 border-b"
           style={{ borderColor: "rgba(255,255,255,0.06)" }}
@@ -210,6 +215,9 @@ export function AtmosphericRoomPage() {
           <div className="text-2xl mb-1">{room.emoji}</div>
           <div className="font-semibold text-white/90 text-lg">{room.title}</div>
           <div className="text-xs text-white/40 mt-0.5">{room.sub}</div>
+          <div className="mt-3">
+            <RoomSpotifyPlayer slug={slug!} accent={room.accent} />
+          </div>
         </div>
 
         {/* ── Members ── */}
