@@ -6,6 +6,8 @@ import { useAuthStore } from "../store/auth.store";
 import { useRoomsStore } from "../store/rooms.store";
 import { getSocket } from "../websocket/socket";
 import { RoomSpotifyPlayer } from "../components/room/RoomSpotifyPlayer";
+import { ambientEngine } from "../audio/ambientEngine";
+import { useEraStore } from "../store/era.store";
 
 const ROOM_META = [
   {
@@ -70,6 +72,14 @@ export function AtmosphericRoomPage() {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const roomMembers = members[slug ?? ""] ?? [];
+
+  // Silence background ambient while inside the room
+  useEffect(() => {
+    ambientEngine.setAmbient("none");
+    return () => {
+      ambientEngine.setAmbient(useEraStore.getState().currentEra.ambient as any);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!slug || !room) { navigate("/app/rooms"); return; }
