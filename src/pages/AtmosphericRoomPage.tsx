@@ -5,7 +5,7 @@ import { ArrowLeft, Send, Users } from "lucide-react";
 import { useAuthStore } from "../store/auth.store";
 import { useRoomsStore } from "../store/rooms.store";
 import { getSocket } from "../websocket/socket";
-import { RoomSpotifyPlayer } from "../components/room/RoomSpotifyPlayer";
+import { RoomAmbientMusic } from "../components/room/RoomAmbientMusic";
 import { ambientEngine } from "../audio/ambientEngine";
 import { useEraStore } from "../store/era.store";
 
@@ -17,6 +17,9 @@ const ROOM_META = [
     sub: "Tardes de Fotolog y 56k sin ningún motivo.",
     accent: "#fbbf24",
     image: "/rooms/2003-sala_verano.png",
+    playlistId: "3ES4cN0kVGyABK89rX3dxl",
+    trackName: "Besos",
+    artistName: "El Canto del Loco",
   },
   {
     slug: "madrugada-2004",
@@ -25,6 +28,9 @@ const ROOM_META = [
     sub: "La noche en que internet parecía más humano.",
     accent: "#818cf8",
     image: "/rooms/2004-sala_madrugada.png",
+    playlistId: "3Ndzvp0TmsjJ9NViIYwpLI",
+    trackName: "Rosas",
+    artistName: "La Oreja de Van Gogh",
   },
   {
     slug: "lluvia-2005",
@@ -33,6 +39,9 @@ const ROOM_META = [
     sub: "Bajar el Messenger mientras llueve por la ventana.",
     accent: "#6ea8fe",
     image: "/rooms/2005-sala_lluvia%20.png",
+    playlistId: "7qQ5v2UHqwFic4DyqulT0Z",
+    trackName: "Malo",
+    artistName: "Bebe",
   },
   {
     slug: "verano-social-2006",
@@ -41,6 +50,9 @@ const ROOM_META = [
     sub: "Emoticones, nudges y temas de MSN hasta tarde.",
     accent: "#34d399",
     image: "/rooms/2006-sala_verano_social.png",
+    playlistId: "3la1IEF7frezvW1OBVX6qR",
+    trackName: "Pienso en aquella tarde",
+    artistName: "Pereza",
   },
   {
     slug: "noche-melancolica-2007",
@@ -49,6 +61,9 @@ const ROOM_META = [
     sub: "Football Manager, eMule y un chat abierto a las 3am.",
     accent: "#c084fc",
     image: "/rooms/2007-sala_noche_melancolica.png",
+    playlistId: "1vdyNfXdBfinAmpH8JJsPE",
+    trackName: "Diminuto",
+    artistName: "La Oreja de Van Gogh",
   },
 ];
 
@@ -212,7 +227,13 @@ export function AtmosphericRoomPage() {
           </div>
 
           <div className="mt-5">
-            <RoomSpotifyPlayer slug={slug!} accent={room.accent} />
+            <RoomAmbientMusic
+              roomId={room.slug}
+              playlistId={room.playlistId}
+              trackName={room.trackName}
+              artistName={room.artistName}
+              accent={room.accent}
+            />
           </div>
         </motion.div>
       </div>
@@ -241,7 +262,13 @@ export function AtmosphericRoomPage() {
           <div className="font-semibold text-white/90 text-lg">{room.title}</div>
           <div className="text-xs text-white/40 mt-0.5">{room.sub}</div>
           <div className="mt-3">
-            <RoomSpotifyPlayer slug={slug!} accent={room.accent} />
+            <RoomAmbientMusic
+              roomId={room.slug}
+              playlistId={room.playlistId}
+              trackName={room.trackName}
+              artistName={room.artistName}
+              accent={room.accent}
+            />
           </div>
         </div>
 
