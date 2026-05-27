@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { RoomSpotifyModal } from "./RoomSpotifyModal";
 
 export interface RoomAmbientMusicProps {
@@ -98,16 +98,14 @@ export function RoomAmbientMusic({
         </span>
       </motion.button>
 
-      <AnimatePresence>
-        {open && (
-          <RoomSpotifyModal
-            playlistId={playlistId}
-            roomId={roomId}
-            accent={accent}
-            onClose={() => setOpen(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* Modal SIEMPRE montado: el iframe persiste aunque se cierre el modal */}
+      <RoomSpotifyModal
+        playlistId={playlistId}
+        roomId={roomId}
+        accent={accent}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }

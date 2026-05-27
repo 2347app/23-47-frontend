@@ -8,26 +8,32 @@ interface Props {
   playlistId: string;
   roomId: string;
   accent: string;
+  open: boolean;
   onClose: () => void;
 }
 
-export function RoomSpotifyModal({ playlistId, accent, onClose }: Props) {
+/**
+ * Modal de Spotify con iframe PERSISTENTE.
+ * El componente está siempre montado para que la música no se corte al cerrar.
+ * Solo se anima la visibilidad del overlay.
+ */
+export function RoomSpotifyModal({ playlistId, accent, open, onClose }: Props) {
   const user = useAuthStore((s) => s.user);
   const isConnected = Boolean(user?.spotifyConnected);
 
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };
     window.addEventListener("keydown", onKey);
-    // Lock body scroll while modal is open
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [open, onClose]);
 
   const connect = () => {
     const token = useAuthStore.getState().accessToken;
@@ -38,21 +44,20 @@ export function RoomSpotifyModal({ playlistId, accent, onClose }: Props) {
   return (
     <motion.div
       className="fixed inset-0 z-[60] flex items-end justify-center px-4 pb-6 sm:items-center sm:p-6"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+      initial={false}
+      animate={{ opacity: open ? 1 : 0 }}
       transition={{ duration: 0.25 }}
       onClick={onClose}
       style={{
         background: "rgba(2, 4, 10, 0.55)",
         backdropFilter: "blur(10px)",
         WebkitBackdropFilter: "blur(10px)",
+        pointerEvents: open ? "auto" : "none",
       }}
     >
       <motion.div
-        initial={{ y: 24, opacity: 0, scale: 0.98 }}
-        animate={{ y: 0, opacity: 1, scale: 1 }}
-        exit={{ y: 16, opacity: 0, scale: 0.98 }}
+        initial={false}
+        animate={{ y: open ? 0 : 16, scale: open ? 1 : 0.98, opacity: open ? 1 : 0 }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         onClick={(e) => e.stopPropagation()}
         className="relative w-full max-w-sm overflow-hidden"
@@ -114,12 +119,12 @@ export function RoomSpotifyModal({ playlistId, accent, onClose }: Props) {
               }}
             >
               <iframe
-                src={`https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator&theme=0`}
+                src={`https://open.spotify.com/embed/playlist/${playlistId}?utm_source=generator&theme=0&autoplay=1`}
                 width="100%"
                 height="152"
                 frameBorder="0"
                 allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                loading="lazy"
+                loading="eager"
                 style={{ borderRadius: 10, display: "block" }}
               />
             </div>
