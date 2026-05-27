@@ -92,7 +92,16 @@ export function AtmosphericRoomPage() {
     });
 
     const onChat = (msg: RoomMessage) => {
-      setMessages((prev) => [...prev, { ...msg, id: msg.id ?? String(msg.at) }]);
+      setMessages((prev) => {
+        // Skip echo of own message (already added optimistically)
+        if (msg.fromUserId === user?.id && prev.some((m) => m.id.startsWith("local-") && m.content === msg.content)) {
+          return prev.map((m) =>
+            m.id.startsWith("local-") && m.content === msg.content ? { ...msg, id: msg.id ?? String(msg.at) } : m
+          );
+        }
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, { ...msg, id: msg.id ?? String(msg.at) }];
+      });
     };
 
     socket.on("room:chat", onChat);
@@ -113,7 +122,13 @@ export function AtmosphericRoomPage() {
 
   const sendMessage = () => {
     const content = input.trim();
-    if (!content || !slug) return;
+    if (!content || !slug || !user) return;
+    // Optimistic local append — the server echo will replace it (or be deduped)
+    const localId = `local-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    setMessages((prev) => [
+      ...prev,
+      { id: localId, fromUserId: user.id, fromUsername: user.username, content, at: Date.now() },
+    ]);
     getSocket(token)?.emit("room:chat", { slug, content });
     setInput("");
   };
