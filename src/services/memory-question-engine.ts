@@ -112,11 +112,8 @@ export const ALL_QUESTIONS: MemoryQuestion[] = [
     text: "¿Qué se escuchaba desde fuera?",
     sub:  "Lo que entraba aunque no quisieras.",
   },
-  {
-    id: "memory_objects", layer: 3, type: "memory_objects", weight: 0.18,
-    text: "¿Qué había que solo era tuyo?",
-    sub:  "Cosas que no estarían en cualquier habitación.",
-  },
+  // Nota: la pregunta de memory_objects se gestiona en el paso dedicado `objects`
+  // mediante el MemoryObjectsPicker. No se incluye aquí para no duplicarla.
 ];
 
 // ── Saturation thresholds ─────────────────────────────────────────────────────
